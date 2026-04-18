@@ -1,5 +1,7 @@
 --CREATE TABLE Categoria
+
 use TiendaEmprendedoresRegionales;
+
 SELECT * FROM categoria;
 SELECT * FROM Rol;
 SELECT * FROM Estado;
