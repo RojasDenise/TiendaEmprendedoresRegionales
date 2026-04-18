@@ -107,7 +107,7 @@ const login = async (req, res) => {
                     return res.status(403).json({ message: "Acceso denegado: cuenta pendiente de aprobación." });
                 }
                 
-                // Quitamos la contraseña del objeto antes de enviarlo
+                
                 delete user.contraseña;
                 return res.json({ message: "Bienvenido Emprendedor/Admin", user });
             }
