@@ -40,7 +40,7 @@ CREATE TABLE Estado
 
 CREATE TABLE Usuario
 (
-  id_usuario INT NOT NULL,
+  id_usuario INT IDENTITY(1,1),
   apellidoNombre VARCHAR(50) NOT NULL,
   DNI INT NOT NULL,
   fecha_nacimiento DATE NOT NULL,
@@ -69,7 +69,7 @@ CREATE TABLE Producto
 
 CREATE TABLE Cliente
 (
-  id_cliente INT NOT NULL,
+  id_cliente INT IDENTITY(1,1),
   apellidoNombre VARCHAR(50) NOT NULL,
   DNI INT NOT NULL,
   fecha_nacimiento DATE NOT NULL,
