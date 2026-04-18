@@ -56,7 +56,7 @@ CREATE TABLE Usuario
 CREATE TABLE Producto
 (
   id_producto INT NOT NULL,
-  nombre VARCHAR(200) NOT NULL,
+  nombre VARCHAR(50) NOT NULL,
   descripcion VARCHAR(200) NOT NULL,
   precio FLOAT NOT NULL,
   stock INT NOT NULL,
@@ -101,7 +101,7 @@ CREATE TABLE Pago
 (
   id_pago INT NOT NULL,
   fecha DATE NOT NULL,
-  formaPago VARCHAR(200) NOT NULL,
+  formaPago VARCHAR(50) NOT NULL,
   montoTotal FLOAT NOT NULL,
   estado VARCHAR(50) NOT NULL,
   id_factura INT NOT NULL,
@@ -131,7 +131,7 @@ CREATE TABLE Envio
 CREATE TABLE Estado_Reclamo
 (
   id_estadoReclamo INT NOT NULL,
-  descripcion VARCHAR(100) NOT NULL,
+  descripcion VARCHAR(50) NOT NULL,
   PRIMARY KEY (id_estadoReclamo)
 );
 
