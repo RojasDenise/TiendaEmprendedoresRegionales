@@ -17,7 +17,7 @@ SELECT * FROM Estado_Reclamo;
 SELECT * FROM Mensaje_Reclamo;
 SELECT * FROM Reclamo;
 SELECT * FROM Item_Carrito;
-SELECT * FROM Valoración;
+SELECT * FROM Valoraciï¿½n;
 
 CREATE TABLE Categoria
 (
@@ -53,7 +53,7 @@ CREATE TABLE Usuario
   DNI INT NOT NULL,
   fecha_nacimiento DATE NOT NULL,
   email VARCHAR(50) NOT NULL,
-  contraseña VARCHAR(50) NOT NULL,
+  contraseï¿½a VARCHAR(50) NOT NULL,
   id_rol INT NOT NULL,
   id_estado INT NOT NULL,
   PRIMARY KEY (id_usuario),
@@ -82,7 +82,7 @@ CREATE TABLE Cliente
   DNI INT NOT NULL,
   fecha_nacimiento DATE NOT NULL,
   email VARCHAR(50) NOT NULL,
-  contraseña VARCHAR(50) NOT NULL,
+  contraseï¿½a VARCHAR(50) NOT NULL,
   PRIMARY KEY (id_cliente)
 );
 
@@ -181,7 +181,7 @@ CREATE TABLE Item_Carrito
   FOREIGN KEY (id_carrito) REFERENCES Carrito(id_carrito)
 );
 
-CREATE TABLE Valoración
+CREATE TABLE Valoraciï¿½n
 (
   id_valoracion INT NOT NULL,
   puntaje INT NOT NULL,
@@ -196,4 +196,4 @@ CREATE TABLE Valoración
   FOREIGN KEY (id_producto) REFERENCES Producto(id_producto)
 );
 
-SELECT email, contraseña FROM Usuario;
+SELECT email, contraseï¿½a FROM Usuario;

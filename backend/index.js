@@ -1,36 +1,57 @@
 const express = require('express');
 const cors = require('cors');
 const { getConnection } = require('./src/config/db');
+
+// 1. Importación de los Routers (Tus rutas + las de Denise)
+const productoRoutes = require('./src/routes/productoRoutes');
+const categoriaRoutes = require('./src/routes/categoriaRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 
 const app = express();
 
-// 1. Configuración de Middlewares
+// 2. Middlewares Globales
 app.use(cors());
 app.use(express.json());
 
-// 2. Ruta de prueba rápida para descartar errores
+// 3. Rutas de Prueba y Diagnóstico
+app.get('/', (req, res) => {
+    res.send('Servidor de la Tienda de Emprendedores funcionando correctamente.');
+});
+
+app.get('/api/ping', (req, res) => {
+    res.json({ mensaje: "API escuchando correctamente", timestamp: new Date() });
+});
+
 app.post('/api/test', (req, res) => {
     res.json({ message: "¡Servidor encendido y respondiendo!" });
 });
 
-// 3. Rutas de la Aplicación
+// 4. Registro de Rutas de la Aplicación
 app.use('/api/auth', authRoutes);
+app.use('/api/productos', productoRoutes);
+app.use('/api/categorias', categoriaRoutes);
 
-app.get('/', (req, res) => {
-    res.send('Servidor de la Tienda de Emprendedores funcionando');
+// 5. Manejo de Rutas no encontradas (404)
+app.use((req, res) => {
+    res.status(404).json({ 
+        error: "Ruta no encontrada", 
+        path: req.originalUrl 
+    });
 });
 
-// 4. Encendido del Servidor (Puerto 5000)
-const PORT = 5000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`\n==========================================`);
-    console.log(`SERVIDOR ESCUCHANDO EN EL PUERTO: ${PORT}`);
-    console.log(`Rutas: /api/auth/register, /api/auth/login`);
-    console.log(`==========================================\n`);
+// 6. Configuración del Puerto y Arranque
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, async () => {
+    console.log('==============================================');
+    console.log(`🚀 Servidor iniciado en: http://localhost:${PORT}`);
     
-    // Intentar conectar a la DB sin que bloquee el servidor
-    getConnection()
-        .then(() => console.log(" SQL Server conectado correctamente"))
-        .catch(err => console.log(" Error de conexión DB:", err.message));
+    try {
+        await getConnection();
+        console.log('✅ Conexión exitosa a SQL Server');
+    } catch (error) {
+        console.error('❌ Error crítico de conexión a la BD:', error.message);
+    }
+    console.log('==============================================');
+    console.log(`Rutas listas: /api/productos, /api/categorias, /api/auth`);
 });
