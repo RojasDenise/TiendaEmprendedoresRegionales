@@ -1,4 +1,4 @@
---CREATE TABLE Categoria
+
 
 use TiendaEmprendedoresRegionales;
 
@@ -18,6 +18,8 @@ SELECT * FROM Mensaje_Reclamo;
 SELECT * FROM Reclamo;
 SELECT * FROM Item_Carrito;
 SELECT * FROM Valoración;
+
+CREATE TABLE Categoria
 (
   id_categoria INT NOT NULL,
   descripcion VARCHAR(50) NOT NULL,
@@ -30,6 +32,9 @@ CREATE TABLE Rol
   descripcion VARCHAR(50) NOT NULL,
   PRIMARY KEY (id_rol)
 );
+INSERT INTO Rol (id_rol, descripcion) VALUES (1, 'Admin');
+INSERT INTO Rol (id_rol, descripcion) VALUES (2, 'Emprendedor');
+
 
 CREATE TABLE Estado
 (
@@ -37,6 +42,9 @@ CREATE TABLE Estado
   descripcion VARCHAR(50) NOT NULL,
   PRIMARY KEY (id_estado)
 );
+INSERT INTO Estado (id_estado, descripcion) VALUES (1, 'Activo');
+INSERT INTO Estado (id_estado, descripcion) VALUES (2, 'Pendiente');
+INSERT INTO Estado (id_estado, descripcion) VALUES (3, 'Inactivo');
 
 CREATE TABLE Usuario
 (
@@ -187,3 +195,5 @@ CREATE TABLE Valoración
   FOREIGN KEY (id_factura) REFERENCES Factura(id_factura),
   FOREIGN KEY (id_producto) REFERENCES Producto(id_producto)
 );
+
+SELECT email, contraseña FROM Usuario;
