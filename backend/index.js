@@ -2,10 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const { getConnection } = require('./src/config/db');
 
-// 1. Importación de los Routers
+// 1. Importación de los Routers (Tus rutas + las de Denise)
 const productoRoutes = require('./src/routes/productoRoutes');
 const categoriaRoutes = require('./src/routes/categoriaRoutes');
-const authRoutes = require('./src/routes/authRoutes'); // <--- Lo de Denise
+const authRoutes = require('./src/routes/authRoutes');
 
 const app = express();
 
@@ -18,18 +18,18 @@ app.get('/', (req, res) => {
     res.send('Servidor de la Tienda de Emprendedores funcionando correctamente.');
 });
 
-app.post('/api/test', (req, res) => {
-    res.json({ message: "¡Servidor encendido y respondiendo!" });
-});
-
 app.get('/api/ping', (req, res) => {
     res.json({ mensaje: "API escuchando correctamente", timestamp: new Date() });
 });
 
-// 4. Registro de Rutas de la API
-app.use('/api/auth', authRoutes); // <--- Autenticación (Denise)
-app.use('/api/productos', productoRoutes); // <--- Tus productos
-app.use('/api/categorias', categoriaRoutes); // <--- Tus categorías
+app.post('/api/test', (req, res) => {
+    res.json({ message: "¡Servidor encendido y respondiendo!" });
+});
+
+// 4. Registro de Rutas de la Aplicación
+app.use('/api/auth', authRoutes);
+app.use('/api/productos', productoRoutes);
+app.use('/api/categorias', categoriaRoutes);
 
 // 5. Manejo de Rutas no encontradas (404)
 app.use((req, res) => {
@@ -44,13 +44,13 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, async () => {
     console.log('==============================================');
-    console.log(` Servidor iniciado en: http://localhost:${PORT}`);
+    console.log(`🚀 Servidor iniciado en: http://localhost:${PORT}`);
     
     try {
         await getConnection();
         console.log('✅ Conexión exitosa a SQL Server');
     } catch (error) {
-        console.error(' Error crítico de conexión a la BD:', error.message);
+        console.error('❌ Error crítico de conexión a la BD:', error.message);
     }
     console.log('==============================================');
     console.log(`Rutas listas: /api/productos, /api/categorias, /api/auth`);
