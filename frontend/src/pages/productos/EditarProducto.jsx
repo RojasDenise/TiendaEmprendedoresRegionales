@@ -13,10 +13,9 @@ export default function EditarProducto() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Cargar categorías y datos del producto
     Promise.all([
       getCategories(),
-      fetch(`${BASE_URL}/productos/${id}`).then(r => r.json())
+      fetch(`${BASE_URL}/productos/${id}`).then(r => r.json()),
     ]).then(([cats, producto]) => {
       setCategorias(cats);
       setForm({
@@ -41,11 +40,8 @@ export default function EditarProducto() {
     setCargando(true);
     try {
       await updateProduct(
-        id,
-        form.nombre,
-        form.descripcion,
-        parseFloat(form.precio),
-        parseInt(form.stock),
+        id, form.nombre, form.descripcion,
+        parseFloat(form.precio), parseInt(form.stock),
         parseInt(form.id_categoria)
       );
       mostrarMensaje('Producto actualizado con éxito');
@@ -58,25 +54,38 @@ export default function EditarProducto() {
   };
 
   return (
-    <div>
-      <div style={s.header}>
-        <h1 style={s.titulo}>Editar Producto</h1>
+    <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={s.topbar}>
+        <button onClick={() => navigate('/dashboard/productos')} style={s.btnVolver}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Productos
+        </button>
+        <h1 style={s.titulo}>Editar producto</h1>
+        <p style={s.subtitulo}>Modificá los datos del producto</p>
       </div>
 
-      {mensaje.texto && <Alerta mensaje={mensaje} />}
+      {mensaje.texto && (
+        <div style={mensaje.tipo === 'error' ? s.alertaError : s.alertaExito}>
+          {mensaje.texto}
+        </div>
+      )}
 
       <div style={s.card}>
         <form onSubmit={handleSubmit}>
           <div style={s.campo}>
-            <label style={s.label}>Nombre del Producto *</label>
+            <label style={s.label}>Nombre del producto *</label>
             <input name="nombre" value={form.nombre} onChange={handleChange}
               maxLength={50} required style={s.input} />
           </div>
+
           <div style={s.campo}>
             <label style={s.label}>Descripción *</label>
             <textarea name="descripcion" value={form.descripcion} onChange={handleChange}
               required rows={3} style={{ ...s.input, resize: 'vertical' }} />
           </div>
+
           <div style={s.grid2}>
             <div style={s.campo}>
               <label style={s.label}>Precio *</label>
@@ -89,6 +98,7 @@ export default function EditarProducto() {
                 value={form.stock} onChange={handleChange} required style={s.input} />
             </div>
           </div>
+
           <div style={s.campo}>
             <label style={s.label}>Categoría *</label>
             <select name="id_categoria" value={form.id_categoria}
@@ -99,9 +109,10 @@ export default function EditarProducto() {
               ))}
             </select>
           </div>
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
             <button type="submit" disabled={cargando} style={s.btnGuardar}>
-              {cargando ? 'Guardando...' : 'Guardar Cambios'}
+              {cargando ? 'Guardando...' : 'Guardar cambios'}
             </button>
             <button type="button" onClick={() => navigate('/dashboard/productos')} style={s.btnCancelar}>
               Cancelar
@@ -113,25 +124,47 @@ export default function EditarProducto() {
   );
 }
 
-function Alerta({ mensaje }) {
-  return (
-    <div style={{
-      padding: '0.75rem 1rem', marginBottom: '1rem', borderRadius: 6,
-      backgroundColor: mensaje.tipo === 'error' ? '#fde8e8' : '#e8f5e9',
-      color: mensaje.tipo === 'error' ? '#c0392b' : '#27ae60',
-      border: `1px solid ${mensaje.tipo === 'error' ? '#e74c3c' : '#2ecc71'}`
-    }}>{mensaje.texto}</div>
-  );
-}
-
 const s = {
-  header: { marginBottom: '1.5rem' },
-  titulo: { margin: 0, fontSize: '1.5rem', fontWeight: 'bold', color: '#2c3e50' },
-  card: { backgroundColor: 'white', borderRadius: 8, padding: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', maxWidth: 600 },
-  grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' },
+  topbar: { marginBottom: '1.5rem' },
+  btnVolver: {
+    display: 'inline-flex', alignItems: 'center', gap: 5,
+    background: 'none', border: 'none', cursor: 'pointer',
+    fontSize: 13, color: '#999', padding: 0, marginBottom: '0.5rem',
+    fontFamily: "'DM Sans', sans-serif",
+  },
+  titulo: {
+    fontFamily: "'DM Serif Display', serif",
+    fontSize: 26, fontWeight: 400, color: '#111', margin: 0,
+  },
+  subtitulo: { fontSize: 12.5, color: '#aaa', margin: '4px 0 0' },
+  alertaError: {
+    background: '#FEE2E2', color: '#991B1B', border: '0.5px solid #FECACA',
+    borderRadius: 8, padding: '0.65rem 0.9rem', fontSize: 13, marginBottom: '1rem',
+  },
+  alertaExito: {
+    background: '#DCFCE7', color: '#166534', border: '0.5px solid #BBF7D0',
+    borderRadius: 8, padding: '0.65rem 0.9rem', fontSize: 13, marginBottom: '1rem',
+  },
+  card: {
+    background: '#fff', border: '0.5px solid #ebebeb',
+    borderRadius: 12, padding: '2rem', maxWidth: 580,
+  },
+  grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' },
   campo: { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: '1rem' },
-  label: { fontWeight: '500', fontSize: '0.95rem', color: '#333' },
-  input: { padding: '0.6rem 0.75rem', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.95rem', width: '100%', boxSizing: 'border-box' },
-  btnGuardar: { padding: '0.6rem 1.5rem', backgroundColor: '#2c3e50', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 'bold' },
-  btnCancelar: { padding: '0.6rem 1.2rem', backgroundColor: 'white', color: '#333', border: '1px solid #ddd', borderRadius: 6, cursor: 'pointer' },
+  label: { fontSize: 13, fontWeight: 500, color: '#444' },
+  input: {
+    padding: '0.6rem 0.8rem', border: '0.5px solid #ddd', borderRadius: 8,
+    fontSize: 14, color: '#111', outline: 'none', width: '100%',
+    boxSizing: 'border-box', fontFamily: "'DM Sans', sans-serif",
+  },
+  btnGuardar: {
+    padding: '0.65rem 1.5rem', background: '#111', color: '#fff',
+    border: 'none', borderRadius: 8, fontSize: 13.5, fontWeight: 500,
+    cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+  },
+  btnCancelar: {
+    padding: '0.65rem 1.2rem', background: '#fff', color: '#555',
+    border: '0.5px solid #e0e0e0', borderRadius: 8, fontSize: 13.5,
+    cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+  },
 };
