@@ -1,15 +1,10 @@
 const sql = require('mssql');
 const { getConnection } = require('../config/db');
 
-/**
- * PRODUCTO SERVICE: Maneja la lógica de base de datos para productos
- */
-
 const getProducts = async (id_usuario = null) => {
   const pool = await getConnection();
   const request = pool.request();
   
-  // WHERE p.id_estado_prod = 1 asegura que solo traigamos los productos ACTIVOS
   let query = `
     SELECT p.*, c.descripcion AS categoria_nombre, ep.descripcion AS estado_nombre
     FROM Producto p
@@ -24,7 +19,27 @@ const getProducts = async (id_usuario = null) => {
   }
 
   query += ' ORDER BY p.id_producto DESC';
-  
+  const result = await request.query(query);
+  return result.recordset;
+};
+
+const getDeletedProducts = async (id_usuario = null) => {
+  const pool = await getConnection();
+  const request = pool.request();
+
+  let query = `
+    SELECT p.*, c.descripcion AS categoria_nombre
+    FROM Producto p
+    JOIN Categoria c ON p.id_categoria = c.id_categoria
+    WHERE p.id_estado_prod = 2
+  `;
+
+  if (id_usuario) {
+    request.input('id_usuario', sql.Int, parseInt(id_usuario));
+    query += ' AND p.id_usuario = @id_usuario';
+  }
+
+  query += ' ORDER BY p.id_producto DESC';
   const result = await request.query(query);
   return result.recordset;
 };
@@ -52,7 +67,7 @@ const createProduct = async ({ nombre, descripcion, precio, stock, id_categoria,
     .input('stock', sql.Int, stock)
     .input('id_categoria', sql.Int, id_categoria)
     .input('id_usuario', sql.Int, id_usuario)
-    .input('estado', sql.Int, 1) // Por defecto se crea como Activo (1)
+    .input('estado', sql.Int, 1)
     .query(`
       INSERT INTO Producto (nombre, descripcion, precio, stock, id_categoria, id_usuario, id_estado_prod)
       OUTPUT INSERTED.*
@@ -83,15 +98,24 @@ const deleteProduct = async (id) => {
   const pool = await getConnection();
   const result = await pool.request()
     .input('id', sql.Int, parseInt(id))
-    // ELIMINACIÓN LÓGICA: Cambiamos el estado a 2 (Inactivo)
     .query('UPDATE Producto SET id_estado_prod = 2 WHERE id_producto = @id');
   return result.rowsAffected[0] > 0;
 };
 
+const restoreProduct = async (id) => {
+  const pool = await getConnection();
+  const result = await pool.request()
+    .input('id', sql.Int, parseInt(id))
+    .query('UPDATE Producto SET id_estado_prod = 1 WHERE id_producto = @id');
+  return result.rowsAffected[0] > 0;
+};
+
 module.exports = { 
-    getProducts, 
-    getProductById, 
-    createProduct, 
-    updateProduct, 
-    deleteProduct 
+  getProducts,
+  getDeletedProducts,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  restoreProduct
 };

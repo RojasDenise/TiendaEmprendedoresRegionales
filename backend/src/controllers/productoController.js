@@ -11,6 +11,17 @@ const getProducts = async (req, res) => {
   }
 };
 
+const getDeletedProducts = async (req, res) => {
+  try {
+    const { id_usuario } = req.query;
+    const productos = await productoService.getDeletedProducts(id_usuario);
+    res.json(productos);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al obtener productos eliminados' });
+  }
+};
+
 const getProductById = async (req, res) => {
   try {
     const producto = await productoService.getProductById(req.params.id);
@@ -72,4 +83,15 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct };
+const restoreProduct = async (req, res) => {
+  try {
+    const restaurado = await productoService.restoreProduct(req.params.id);
+    if (!restaurado) return res.status(404).json({ message: 'Producto no encontrado' });
+    res.json({ message: 'Producto restaurado con éxito' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al restaurar producto' });
+  }
+};
+
+module.exports = { getProducts, getDeletedProducts, getProductById, createProduct, updateProduct, deleteProduct, restoreProduct };
