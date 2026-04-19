@@ -5,6 +5,7 @@ const { getConnection } = require('./src/config/db');
 // 1. Importación de los Routers
 const productoRoutes = require('./src/routes/productoRoutes');
 const categoriaRoutes = require('./src/routes/categoriaRoutes');
+const authRoutes = require('./src/routes/authRoutes'); // <--- Lo de Denise
 
 const app = express();
 
@@ -17,15 +18,18 @@ app.get('/', (req, res) => {
     res.send('Servidor de la Tienda de Emprendedores funcionando correctamente.');
 });
 
-// Esta ruta sirve para verificar que el prefijo /api responde
+app.post('/api/test', (req, res) => {
+    res.json({ message: "¡Servidor encendido y respondiendo!" });
+});
+
 app.get('/api/ping', (req, res) => {
     res.json({ mensaje: "API escuchando correctamente", timestamp: new Date() });
 });
 
 // 4. Registro de Rutas de la API
-// IMPORTANTE: No usar tildes en los strings de las rutas
-app.use('/api/productos', productoRoutes);
-app.use('/api/categorias', categoriaRoutes);
+app.use('/api/auth', authRoutes); // <--- Autenticación (Denise)
+app.use('/api/productos', productoRoutes); // <--- Tus productos
+app.use('/api/categorias', categoriaRoutes); // <--- Tus categorías
 
 // 5. Manejo de Rutas no encontradas (404)
 app.use((req, res) => {
@@ -40,14 +44,14 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, async () => {
     console.log('==============================================');
-    console.log(`🚀 Servidor iniciado en: http://localhost:${PORT}`);
+    console.log(` Servidor iniciado en: http://localhost:${PORT}`);
     
     try {
         await getConnection();
         console.log('✅ Conexión exitosa a SQL Server');
     } catch (error) {
-        console.error('❌ Error crítico de conexión a la BD:', error.message);
+        console.error(' Error crítico de conexión a la BD:', error.message);
     }
     console.log('==============================================');
-    console.log(`Prueba la ruta: http://localhost:${PORT}/api/categorias`);
+    console.log(`Rutas listas: /api/productos, /api/categorias, /api/auth`);
 });
