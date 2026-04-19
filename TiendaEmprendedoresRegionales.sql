@@ -2,6 +2,7 @@
 
 use TiendaEmprendedoresRegionales;
 
+
 SELECT * FROM categoria;
 SELECT * FROM Rol;
 SELECT * FROM Estado;
@@ -17,183 +18,166 @@ SELECT * FROM Estado_Reclamo;
 SELECT * FROM Mensaje_Reclamo;
 SELECT * FROM Reclamo;
 SELECT * FROM Item_Carrito;
-SELECT * FROM Valoraci�n;
+SELECT * FROM Valoración;
+SELECT * FROM Estado_Producto;
 
-CREATE TABLE Categoria
-(
-  id_categoria INT NOT NULL,
-  descripcion VARCHAR(50) NOT NULL,
-  PRIMARY KEY (id_categoria)
+CREATE TABLE Categoria (
+    id_categoria INT IDENTITY(1,1) PRIMARY KEY,
+    descripcion VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE Rol
-(
-  id_rol INT NOT NULL,
-  descripcion VARCHAR(50) NOT NULL,
-  PRIMARY KEY (id_rol)
-);
-INSERT INTO Rol (id_rol, descripcion) VALUES (1, 'Admin');
-INSERT INTO Rol (id_rol, descripcion) VALUES (2, 'Emprendedor');
-
-
-CREATE TABLE Estado
-(
-  id_estado INT NOT NULL,
-  descripcion VARCHAR(50) NOT NULL,
-  PRIMARY KEY (id_estado)
-);
-INSERT INTO Estado (id_estado, descripcion) VALUES (1, 'Activo');
-INSERT INTO Estado (id_estado, descripcion) VALUES (2, 'Pendiente');
-INSERT INTO Estado (id_estado, descripcion) VALUES (3, 'Inactivo');
-
-CREATE TABLE Usuario
-(
-  id_usuario INT IDENTITY(1,1),
-  apellidoNombre VARCHAR(50) NOT NULL,
-  DNI INT NOT NULL,
-  fecha_nacimiento DATE NOT NULL,
-  email VARCHAR(50) NOT NULL,
-  contrase�a VARCHAR(50) NOT NULL,
-  id_rol INT NOT NULL,
-  id_estado INT NOT NULL,
-  PRIMARY KEY (id_usuario),
-  FOREIGN KEY (id_rol) REFERENCES Rol(id_rol),
-  FOREIGN KEY (id_estado) REFERENCES Estado(id_estado)
+CREATE TABLE Rol (
+    id_rol INT IDENTITY(1,1) PRIMARY KEY,
+    descripcion VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE Producto
-(
-  id_producto INT NOT NULL,
-  nombre VARCHAR(50) NOT NULL,
-  descripcion VARCHAR(200) NOT NULL,
-  precio FLOAT NOT NULL,
-  stock INT NOT NULL,
-  id_categoria INT NOT NULL,
-  id_usuario INT NOT NULL,
-  PRIMARY KEY (id_producto),
-  FOREIGN KEY (id_categoria) REFERENCES Categoria(id_categoria),
-  FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario)
+CREATE TABLE Estado (
+    id_estado INT IDENTITY(1,1) PRIMARY KEY,
+    descripcion VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE Cliente
-(
-  id_cliente INT IDENTITY(1,1),
-  apellidoNombre VARCHAR(50) NOT NULL,
-  DNI INT NOT NULL,
-  fecha_nacimiento DATE NOT NULL,
-  email VARCHAR(50) NOT NULL,
-  contrase�a VARCHAR(50) NOT NULL,
-  PRIMARY KEY (id_cliente)
+CREATE TABLE Estado_Producto (
+    id_estado_prod INT IDENTITY(1,1) PRIMARY KEY,
+    descripcion VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE Carrito
-(
-  id_carrito INT NOT NULL,
-  fecha_creacion DATE NOT NULL,
-  id_cliente INT NOT NULL,
-  PRIMARY KEY (id_carrito),
-  FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente)
+-- 3. TABLAS DE USUARIOS Y CLIENTES
+CREATE TABLE Usuario (
+    id_usuario INT IDENTITY(1,1) PRIMARY KEY,
+    apellidoNombre VARCHAR(50) NOT NULL,
+    DNI INT NOT NULL,
+    fecha_nacimiento DATE NOT NULL,
+    email VARCHAR(50) NOT NULL,
+    contraseña VARCHAR(255) NOT NULL, 
+    id_rol INT NOT NULL,
+    id_estado INT NOT NULL,
+    FOREIGN KEY (id_rol) REFERENCES Rol(id_rol),
+    FOREIGN KEY (id_estado) REFERENCES Estado(id_estado)
 );
 
-CREATE TABLE Factura
-(
-  id_factura INT NOT NULL,
-  fecha DATE NOT NULL,
-  total FLOAT NOT NULL,
-  id_carrito INT NOT NULL,
-  PRIMARY KEY (id_factura),
-  FOREIGN KEY (id_carrito) REFERENCES Carrito(id_carrito)
+CREATE TABLE Cliente (
+    id_cliente INT IDENTITY(1,1) PRIMARY KEY,
+    apellidoNombre VARCHAR(50) NOT NULL,
+    DNI INT NOT NULL,
+    fecha_nacimiento DATE NOT NULL,
+    email VARCHAR(50) NOT NULL,
+    contraseña VARCHAR(255) NOT NULL, -- Ya con tamaño para Bcrypt
 );
 
-CREATE TABLE Pago
-(
-  id_pago INT NOT NULL,
-  fecha DATE NOT NULL,
-  formaPago VARCHAR(50) NOT NULL,
-  montoTotal FLOAT NOT NULL,
-  estado VARCHAR(50) NOT NULL,
-  id_factura INT NOT NULL,
-  PRIMARY KEY (id_pago),
-  FOREIGN KEY (id_factura) REFERENCES Factura(id_factura)
+-- 4. TABLA DE PRODUCTOS
+CREATE TABLE Producto (
+    id_producto INT IDENTITY(1,1) PRIMARY KEY, 
+    nombre VARCHAR(50) NOT NULL,
+    descripcion VARCHAR(200) NOT NULL,
+    precio FLOAT NOT NULL,
+    stock INT NOT NULL,
+    id_categoria INT NOT NULL,
+    id_usuario INT NOT NULL,
+    id_estado_prod INT NOT NULL DEFAULT 1,
+    FOREIGN KEY (id_categoria) REFERENCES Categoria(id_categoria),
+    FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario),
+    FOREIGN KEY (id_estado_prod) REFERENCES Estado_Producto(id_estado_prod)
 );
 
-CREATE TABLE estado_envio
-(
-  id_estado_envio INT NOT NULL,
-  descripcion VARCHAR(50) NOT NULL,
-  PRIMARY KEY (id_estado_envio)
+-- 5. TABLAS DE VENTA
+CREATE TABLE Carrito (
+    id_carrito INT IDENTITY(1,1) PRIMARY KEY,
+    fecha_creacion DATE NOT NULL,
+    id_cliente INT NOT NULL,
+    FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente)
 );
 
-CREATE TABLE Envio
-(
-  id_envio INT NOT NULL,
-  fecha_envio DATE NOT NULL,
-  fecha_entrega DATE NOT NULL,
-  id_carrito INT NOT NULL,
-  id_estado_envio INT NOT NULL,
-  PRIMARY KEY (id_envio),
-  FOREIGN KEY (id_carrito) REFERENCES Carrito(id_carrito),
-  FOREIGN KEY (id_estado_envio) REFERENCES estado_envio(id_estado_envio)
+CREATE TABLE Item_Carrito (
+    id_itemCarrito INT IDENTITY(1,1) PRIMARY KEY,
+    cantidad INT NOT NULL,
+    precio FLOAT NOT NULL,
+    id_producto INT NOT NULL,
+    id_carrito INT NOT NULL,
+    FOREIGN KEY (id_producto) REFERENCES Producto(id_producto),
+    FOREIGN KEY (id_carrito) REFERENCES Carrito(id_carrito)
 );
 
-CREATE TABLE Estado_Reclamo
-(
-  id_estadoReclamo INT NOT NULL,
-  descripcion VARCHAR(50) NOT NULL,
-  PRIMARY KEY (id_estadoReclamo)
+CREATE TABLE Factura (
+    id_factura INT IDENTITY(1,1) PRIMARY KEY,
+    fecha DATE NOT NULL,
+    total FLOAT NOT NULL,
+    id_carrito INT NOT NULL,
+    FOREIGN KEY (id_carrito) REFERENCES Carrito(id_carrito)
 );
 
-CREATE TABLE Mensaje_Reclamo
-(
-  id_mensaje INT NOT NULL,
-  contenido VARCHAR(200) NOT NULL,
-  fecha_envio DATE NOT NULL,
-  id_usuario INT NOT NULL,
-  PRIMARY KEY (id_mensaje),
-  FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario)
+CREATE TABLE Pago (
+    id_pago INT IDENTITY(1,1) PRIMARY KEY,
+    fecha DATE NOT NULL,
+    formaPago VARCHAR(50) NOT NULL,
+    montoTotal FLOAT NOT NULL,
+    estado VARCHAR(50) NOT NULL,
+    id_factura INT NOT NULL,
+    FOREIGN KEY (id_factura) REFERENCES Factura(id_factura)
 );
 
-CREATE TABLE Reclamo
-(
-  id_reclamo INT NOT NULL,
-  fecha_reclamo DATE NOT NULL,
-  motivo VARCHAR(200) NOT NULL,
-  id_estadoReclamo INT NOT NULL,
-  id_mensaje INT NOT NULL,
-  id_factura INT NOT NULL,
-  id_cliente INT NOT NULL,
-  PRIMARY KEY (id_reclamo),
-  FOREIGN KEY (id_estadoReclamo) REFERENCES Estado_Reclamo(id_estadoReclamo),
-  FOREIGN KEY (id_mensaje) REFERENCES Mensaje_Reclamo(id_mensaje),
-  FOREIGN KEY (id_factura) REFERENCES Factura(id_factura),
-  FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente)
+-- 6. ENVÍOS Y RECLAMOS
+CREATE TABLE estado_envio (
+    id_estado_envio INT IDENTITY(1,1) PRIMARY KEY,
+    descripcion VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE Item_Carrito
-(
-  id_itemCarrito INT NOT NULL,
-  cantidad INT NOT NULL,
-  precio FLOAT NOT NULL,
-  id_producto INT NOT NULL,
-  id_carrito INT NOT NULL,
-  PRIMARY KEY (id_itemCarrito, id_producto, id_carrito),
-  FOREIGN KEY (id_producto) REFERENCES Producto(id_producto),
-  FOREIGN KEY (id_carrito) REFERENCES Carrito(id_carrito)
+CREATE TABLE Envio (
+    id_envio INT IDENTITY(1,1) PRIMARY KEY,
+    fecha_envio DATE NOT NULL,
+    fecha_entrega DATE NOT NULL,
+    id_carrito INT NOT NULL,
+    id_estado_envio INT NOT NULL,
+    FOREIGN KEY (id_carrito) REFERENCES Carrito(id_carrito),
+    FOREIGN KEY (id_estado_envio) REFERENCES estado_envio(id_estado_envio)
 );
 
-CREATE TABLE Valoraci�n
-(
-  id_valoracion INT NOT NULL,
-  puntaje INT NOT NULL,
-  comentario VARCHAR(200) NOT NULL,
-  fecha DATE NOT NULL,
-  id_cliente INT NOT NULL,
-  id_factura INT NOT NULL,
-  id_producto INT NOT NULL,
-  PRIMARY KEY (id_valoracion),
-  FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente),
-  FOREIGN KEY (id_factura) REFERENCES Factura(id_factura),
-  FOREIGN KEY (id_producto) REFERENCES Producto(id_producto)
+CREATE TABLE Estado_Reclamo (
+    id_estadoReclamo INT IDENTITY(1,1) PRIMARY KEY,
+    descripcion VARCHAR(50) NOT NULL
 );
 
-SELECT email, contrase�a FROM Usuario;
+CREATE TABLE Mensaje_Reclamo (
+    id_mensaje INT IDENTITY(1,1) PRIMARY KEY,
+    contenido VARCHAR(200) NOT NULL,
+    fecha_envio DATE NOT NULL,
+    id_usuario INT NOT NULL,
+    FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario)
+);
+
+CREATE TABLE Reclamo (
+    id_reclamo INT IDENTITY(1,1) PRIMARY KEY,
+    fecha_reclamo DATE NOT NULL,
+    motivo VARCHAR(200) NOT NULL,
+    id_estadoReclamo INT NOT NULL,
+    id_mensaje INT NOT NULL,
+    id_factura INT NOT NULL,
+    id_cliente INT NOT NULL,
+    FOREIGN KEY (id_estadoReclamo) REFERENCES Estado_Reclamo(id_estadoReclamo),
+    FOREIGN KEY (id_mensaje) REFERENCES Mensaje_Reclamo(id_mensaje),
+    FOREIGN KEY (id_factura) REFERENCES Factura(id_factura),
+    FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente)
+);
+
+CREATE TABLE Valoración (
+    id_valoracion INT IDENTITY(1,1) PRIMARY KEY,
+    puntaje INT NOT NULL,
+    comentario VARCHAR(200) NOT NULL,
+    fecha DATE NOT NULL,
+    id_cliente INT NOT NULL,
+    id_factura INT NOT NULL,
+    id_producto INT NOT NULL,
+    FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente),
+    FOREIGN KEY (id_factura) REFERENCES Factura(id_factura),
+    FOREIGN KEY (id_producto) REFERENCES Producto(id_producto)
+);
+
+-- 7. INSERTAR DATOS INICIALES NECESARIOS
+INSERT INTO Rol (descripcion) VALUES ('Admin'), ('Emprendedor'), ('Cliente');
+INSERT INTO Estado (descripcion) VALUES ('Activo'), ('Pendiente'), ('Inactivo');
+INSERT INTO Estado_Producto (descripcion) VALUES ('Activo'), ('Inactivo');
+INSERT INTO Categoria (descripcion) VALUES ('General');
+
+-- 8. INSERTAMOS PERFILES DE PRUEBA
+INSERT INTO Usuario (apellidoNombre, DNI, fecha_nacimiento, email, contraseña, id_rol, id_estado)
+VALUES ('Denis Emprendedor', 40123456, '1995-05-10',  'denis@tienda.com','$2b$10$wELYCD/yPRQbpH.bnV8IiuOVKYRRFEQVvxdz1jgppXC', -- Hash de 'admin123'
+2,1);
