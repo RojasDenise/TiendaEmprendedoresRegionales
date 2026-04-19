@@ -54,7 +54,7 @@ CREATE TABLE Usuario (
     FOREIGN KEY (id_rol) REFERENCES Rol(id_rol),
     FOREIGN KEY (id_estado) REFERENCES Estado(id_estado)
 );
-
+UPDATE Usuario SET id_estado = 1 WHERE email = 'lopezantonela@tienda.com'
 CREATE TABLE Cliente (
     id_cliente INT IDENTITY(1,1) PRIMARY KEY,
     apellidoNombre VARCHAR(50) NOT NULL,
@@ -78,6 +78,7 @@ CREATE TABLE Producto (
     FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario),
     FOREIGN KEY (id_estado_prod) REFERENCES Estado_Producto(id_estado_prod)
 );
+ALTER TABLE Producto ADD imagen VARCHAR(255) NULL;---nuevo para imagen sino no anda
 
 -- 5. TABLAS DE VENTA
 CREATE TABLE Carrito (

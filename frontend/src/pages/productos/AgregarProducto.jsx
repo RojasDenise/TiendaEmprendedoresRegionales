@@ -9,6 +9,7 @@ export default function AgregarProducto() {
   const [categorias, setCategorias] = useState([]);
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
   const [cargando, setCargando] = useState(false);
+  const [imagen, setImagen] = useState(null);
   const navigate = useNavigate();
 
   const userRaw = sessionStorage.getItem('user');
@@ -26,6 +27,12 @@ export default function AgregarProducto() {
   };
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleImageChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setImagen(e.target.files[0]);
+    }
+  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,7 +41,8 @@ export default function AgregarProducto() {
       await createProduct(
         form.nombre, form.descripcion,
         parseFloat(form.precio), parseInt(form.stock),
-        parseInt(form.id_categoria), user?.id_usuario || 1
+        parseInt(form.id_categoria), user?.id_usuario || 1,
+        imagen
       );
       mostrarMensaje('Producto agregado con éxito');
       setTimeout(() => navigate('/dashboard/productos'), 1500);
@@ -107,6 +115,19 @@ export default function AgregarProducto() {
                 : <option disabled>Cargando categorías...</option>
               }
             </select>
+          </div>
+
+          <div style={s.campo}>
+            <label style={s.label}>Imagen del producto</label>
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={handleImageChange} 
+              style={s.input} 
+            />
+            <p style={{ fontSize: 11, color: '#999', margin: '4px 0 0' }}>
+              Formatos permitidos: JPG, PNG o WEBP.
+            </p>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>

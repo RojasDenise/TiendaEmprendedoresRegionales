@@ -22,18 +22,23 @@ export const getCategories = async () => {
   return await res.json();
 };
 
-export const createProduct = async (nombre, descripcion, precio, stock, id_categoria, id_usuario) => {
+export const createProduct = async (nombre, descripcion, precio, stock, id_categoria, id_usuario, imagen) => {
+  // Creamos el contenedor para enviar texto + archivo físico
+  const formData = new FormData();
+  formData.append('nombre', nombre);
+  formData.append('descripcion', descripcion);
+  formData.append('precio', precio);
+  formData.append('stock', stock);
+  formData.append('id_categoria', id_categoria);
+  formData.append('id_usuario', id_usuario);
+  
+  if (imagen) {
+    formData.append('imagen', imagen); 
+  }
+
   const res = await fetch(`${BASE_URL}/productos`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      nombre,
-      descripcion,
-      precio: parseFloat(precio),
-      stock: parseInt(stock),
-      id_categoria: parseInt(id_categoria),
-      id_usuario: parseInt(id_usuario),
-    }),
+    body: formData, 
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.message || 'Error al crear producto');

@@ -8,6 +8,7 @@ const categoriaRoutes = require('./src/routes/categoriaRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 
 const app = express();
+app.use(express.static('public')); // Sirve archivos estáticos desde la carpeta 'public'
 
 // 2. Middlewares Globales
 app.use(cors());

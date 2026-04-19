@@ -28,8 +28,13 @@ export default function Login() {
       sessionStorage.setItem('user', JSON.stringify(data.user));
 
       // Redirigir según rol
-      if (data.user.id_rol === 1) navigate('/admin');
-      else navigate('/dashboard');
+      if (data.user.id_rol === 1) {
+        navigate('/admin');
+      } else if (data.user.id_rol === 2) {
+        navigate('/dashboard'); // Solo emprendedores
+      } else if (data.user.id_rol === 3) {
+        navigate('/catalogo'); // Clientes van a la tienda/catálogo
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -48,7 +53,7 @@ export default function Login() {
               <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
             </svg>
           </div>
-          <span style={s.brandName}>Kora</span>
+          <span style={s.brandName}>Tienda de Emprendedores Regionales</span>
         </div>
 
         <h1 style={s.titulo}>Bienvenido</h1>

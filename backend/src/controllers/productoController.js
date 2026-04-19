@@ -36,6 +36,7 @@ const getProductById = async (req, res) => {
 const createProduct = async (req, res) => {
   try {
     const { nombre, descripcion, precio, stock, id_categoria, id_usuario } = req.body;
+    const imagen = req.file ? req.file.filename : null;
 
     if (!nombre || !descripcion || !precio || !stock || !id_categoria || !id_usuario) {
       return res.status(400).json({ message: 'Complete todos los campos' });
@@ -44,7 +45,7 @@ const createProduct = async (req, res) => {
       return res.status(400).json({ message: 'Precio y stock deben ser valores positivos' });
     }
 
-    const nuevo = await productoService.createProduct({ nombre, descripcion, precio, stock, id_categoria, id_usuario });
+    const nuevo = await productoService.createProduct({ nombre, descripcion, precio, stock, id_categoria, id_usuario, imagen });
     res.status(201).json({ message: 'Producto agregado con éxito', producto: nuevo });
   } catch (error) {
     console.error(error);
@@ -55,6 +56,7 @@ const createProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { nombre, descripcion, precio, stock, id_categoria } = req.body;
+    const imagen = req.file ? req.file.filename : undefined;
 
     if (!nombre || !descripcion || !precio || stock === undefined || !id_categoria) {
       return res.status(400).json({ message: 'Complete todos los campos' });
@@ -63,7 +65,7 @@ const updateProduct = async (req, res) => {
       return res.status(400).json({ message: 'Precio y stock deben ser valores positivos' });
     }
 
-    const actualizado = await productoService.updateProduct(req.params.id, { nombre, descripcion, precio, stock, id_categoria });
+    const actualizado = await productoService.updateProduct(req.params.id, { nombre, descripcion, precio, stock, id_categoria, imagen });
     if (!actualizado) return res.status(404).json({ message: 'Producto no encontrado' });
     res.json({ message: 'Producto actualizado con éxito' });
   } catch (error) {

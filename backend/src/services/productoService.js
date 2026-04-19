@@ -58,7 +58,7 @@ const getProductById = async (id) => {
   return result.recordset[0] || null;
 };
 
-const createProduct = async ({ nombre, descripcion, precio, stock, id_categoria, id_usuario }) => {
+const createProduct = async ({ nombre, descripcion, precio, stock, id_categoria, id_usuario, imagen }) => {
   const pool = await getConnection();
   const result = await pool.request()
     .input('nombre', sql.VarChar(50), nombre)
@@ -67,33 +67,51 @@ const createProduct = async ({ nombre, descripcion, precio, stock, id_categoria,
     .input('stock', sql.Int, stock)
     .input('id_categoria', sql.Int, id_categoria)
     .input('id_usuario', sql.Int, id_usuario)
-    .input('estado', sql.Int, 1)
+    .input('estado', sql.Int, 1) // Estado activo
+    .input('imagen', sql.VarChar(255), imagen)
     .query(`
-      INSERT INTO Producto (nombre, descripcion, precio, stock, id_categoria, id_usuario, id_estado_prod)
+      INSERT INTO Producto (nombre, descripcion, precio, stock, id_categoria, id_usuario, id_estado_prod, imagen)
       OUTPUT INSERTED.*
-      VALUES (@nombre, @descripcion, @precio, @stock, @id_categoria, @id_usuario, @estado)
+      VALUES (@nombre, @descripcion, @precio, @stock, @id_categoria, @id_usuario, @estado, @imagen)
     `);
   return result.recordset[0];
 };
 
-const updateProduct = async (id, { nombre, descripcion, precio, stock, id_categoria }) => {
+const updateProduct = async (id, { nombre, descripcion, precio, stock, id_categoria, imagen }) => {
   const pool = await getConnection();
-  const result = await pool.request()
-    .input('id', sql.Int, parseInt(id))
-    .input('nombre', sql.VarChar(50), nombre)
-    .input('descripcion', sql.Text, descripcion)
-    .input('precio', sql.Decimal(10, 2), precio)
-    .input('stock', sql.Int, stock)
-    .input('id_categoria', sql.Int, id_categoria)
-    .query(`
-      UPDATE Producto
-      SET nombre = @nombre, descripcion = @descripcion,
-          precio = @precio, stock = @stock, id_categoria = @id_categoria
-      WHERE id_producto = @id AND id_estado_prod = 1
-    `);
-  return result.rowsAffected[0] > 0;
-};
+  const request = pool.request(); // Creamos la petición
 
+  // Configuramos los inputs básicos
+  request.input('id', sql.Int, parseInt(id));
+  request.input('nombre', sql.VarChar(50), nombre);
+  request.input('descripcion', sql.Text, descripcion);
+  request.input('precio', sql.Decimal(10, 2), precio);
+  request.input('stock', sql.Int, stock);
+  request.input('id_categoria', sql.Int, id_categoria);
+
+  // Manejo dinámico de la imagen
+  let queryImagen = "";
+  if (imagen) {
+    request.input('imagen', sql.VarChar(255), imagen);
+    queryImagen = ", imagen = @imagen";
+  }
+
+  
+  const result = await request.query(`
+    UPDATE Producto 
+    SET nombre = @nombre, 
+        descripcion = @descripcion, 
+        precio = @precio, 
+        stock = @stock, 
+        id_categoria = @id_categoria
+        ${queryImagen}
+    WHERE id_producto = @id;
+    
+    SELECT * FROM Producto WHERE id_producto = @id;
+  `);
+  
+  return result.recordset[0];
+};
 const deleteProduct = async (id) => {
   const pool = await getConnection();
   const result = await pool.request()

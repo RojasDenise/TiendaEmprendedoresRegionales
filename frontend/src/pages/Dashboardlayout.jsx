@@ -41,7 +41,7 @@ export default function DashboardLayout({ rol }) {
             </svg>
           </div>
           <div>
-            <div style={s.brandName}>Kora</div>
+            <div style={s.brandName}>Tienda de Emprendedores Regionales</div>
             <div style={s.brandSub}>{isAdmin ? 'Admin' : 'Emprendedor'}</div>
           </div>
         </div>

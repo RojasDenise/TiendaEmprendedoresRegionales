@@ -7,6 +7,7 @@ const BASE_URL = 'http://localhost:5000/api';
 export default function EditarProducto() {
   const { id } = useParams();
   const [form, setForm] = useState({ nombre: '', descripcion: '', precio: '', stock: '', id_categoria: '' });
+  const [nuevaImagen, setNuevaImagen] = useState(null);
   const [categorias, setCategorias] = useState([]);
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
   const [cargando, setCargando] = useState(false);
@@ -40,9 +41,13 @@ export default function EditarProducto() {
     setCargando(true);
     try {
       await updateProduct(
-        id, form.nombre, form.descripcion,
-        parseFloat(form.precio), parseInt(form.stock),
-        parseInt(form.id_categoria)
+        id, 
+        form.nombre, 
+        form.descripcion,
+        parseFloat(form.precio), 
+        parseInt(form.stock),
+        parseInt(form.id_categoria),
+        nuevaImagen
       );
       mostrarMensaje('Producto actualizado con éxito');
       setTimeout(() => navigate('/dashboard/productos'), 1500);
@@ -108,6 +113,19 @@ export default function EditarProducto() {
                 <option key={c.id_categoria} value={c.id_categoria}>{c.descripcion}</option>
               ))}
             </select>
+          </div>
+          
+          <div style={s.campo}>
+              <label style={s.label}>Cambiar imagen (opcional)</label>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={(e) => setNuevaImagen(e.target.files[0])} 
+                style={s.input} 
+              />
+              <p style={{ fontSize: 11, color: '#999', margin: '4px 0 0' }}>
+                Dejá este campo vacío si no querés cambiar la imagen actual.
+              </p>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>

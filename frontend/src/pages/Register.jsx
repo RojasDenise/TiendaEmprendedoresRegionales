@@ -6,20 +6,39 @@ const BASE_URL = 'http://localhost:5000/api';
 export default function Register() {
   const [form, setForm] = useState({
     apellidoNombre: '', DNI: '', fecha_nacimiento: '',
-    email: '', contraseña: '', id_rol: '2',
+    email: '', contraseña: '', id_rol: '2',reseña: ''
   });
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
   const [cargando, setCargando] = useState(false);
   const navigate = useNavigate();
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+  const { name, value } = e.target;
+  
+  // Campo dni 8 caracteres maximo
+  if (name === 'DNI' && value.length > 8) return;
 
+  setForm({ ...form, [name]: value });
+};
   const handleSubmit = async (e) => {
     e.preventDefault();
     setCargando(true);
     setError('');
     setExito('');
+    const hoy = new Date();
+    const cumple = new Date(form.fecha_nacimiento);
+    let edad = hoy.getFullYear() - cumple.getFullYear();
+    const m = hoy.getMonth() - cumple.getMonth();
+    if (m < 0 || (m === 0 && hoy.getDate() < cumple.getDate())) {
+      edad--;
+    }
+
+    if (edad < 16) {
+      setError('La edad mínima para registrarse es de 16 años.');
+      return; // Corta el envío del formulario
+    }
+    setCargando(true);
     try {
       const res = await fetch(`${BASE_URL}/auth/register`, {
         method: 'POST',
@@ -32,11 +51,14 @@ export default function Register() {
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
       setError(err.message);
+      setCargando(false);
     } finally {
       setCargando(false);
     }
   };
-
+  const fechaMaxima = new Date();
+  fechaMaxima.setFullYear(fechaMaxima.getFullYear() - 16);
+  const maxDate = fechaMaxima.toISOString().split("T")[0];
   return (
     <div style={s.page}>
       <div style={s.card}>
@@ -47,10 +69,10 @@ export default function Register() {
               <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
             </svg>
           </div>
-          <span style={s.brandName}>Kora</span>
+          <span style={s.brandName}>Tienda de Emprendedores Regionales</span>
         </div>
 
-        <h1 style={s.titulo}>Crear cuenta</h1>
+        <h1 style={s.titulo}>Bienvenido a la Tienda</h1>
         <p style={s.subtitulo}>Completá tus datos para registrarte</p>
 
         {error && <div style={s.alertaError}>{error}</div>}
@@ -72,7 +94,7 @@ export default function Register() {
             <div style={s.campo}>
               <label style={s.label}>Fecha de nacimiento</label>
               <input name="fecha_nacimiento" type="date" value={form.fecha_nacimiento}
-                onChange={handleChange} required style={s.input} />
+                onChange={handleChange} required style={s.input} max={maxDate} />
             </div>
           </div>
 
@@ -91,11 +113,24 @@ export default function Register() {
           <div style={s.campo}>
             <label style={s.label}>Tipo de cuenta</label>
             <select name="id_rol" value={form.id_rol} onChange={handleChange} style={s.input}>
-              <option value="2">Emprendedor</option>
-              <option value="1">Administrador</option>
+                <option value="2">Emprendedor</option>
+                <option value="3">Cliente</option> 
             </select>
           </div>
 
+        {form.id_rol === '2' && (
+          <div style={s.campo}>
+            <label style={s.label}>¿Qué productos pensás vender?</label>
+            <textarea 
+              name="reseña" 
+              value={form.reseña} 
+              onChange={handleChange} 
+              required 
+              style={{...s.input, minHeight: '80px', resize: 'none'}} 
+              placeholder="Contanos brevemente sobre tu emprendimiento..."
+            />
+          </div>
+        )}
           <button type="submit" disabled={cargando} style={s.btn}>
             {cargando ? 'Registrando...' : 'Crear cuenta'}
           </button>
