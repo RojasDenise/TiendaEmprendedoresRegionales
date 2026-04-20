@@ -62,12 +62,12 @@ const createProduct = async ({ nombre, descripcion, precio, stock, id_categoria,
   const pool = await getConnection();
   const result = await pool.request()
     .input('nombre', sql.VarChar(50), nombre)
-    .input('descripcion', sql.Text, descripcion)
+    .input('descripcion', sql.VarChar(200), descripcion)  // ✅ corregido
     .input('precio', sql.Decimal(10, 2), precio)
     .input('stock', sql.Int, stock)
     .input('id_categoria', sql.Int, id_categoria)
     .input('id_usuario', sql.Int, id_usuario)
-    .input('estado', sql.Int, 1) // Estado activo
+    .input('estado', sql.Int, 1)
     .input('imagen', sql.VarChar(255), imagen)
     .query(`
       INSERT INTO Producto (nombre, descripcion, precio, stock, id_categoria, id_usuario, id_estado_prod, imagen)
@@ -79,24 +79,21 @@ const createProduct = async ({ nombre, descripcion, precio, stock, id_categoria,
 
 const updateProduct = async (id, { nombre, descripcion, precio, stock, id_categoria, imagen }) => {
   const pool = await getConnection();
-  const request = pool.request(); // Creamos la petición
+  const request = pool.request();
 
-  // Configuramos los inputs básicos
   request.input('id', sql.Int, parseInt(id));
   request.input('nombre', sql.VarChar(50), nombre);
-  request.input('descripcion', sql.Text, descripcion);
+  request.input('descripcion', sql.VarChar(200), descripcion);  // ✅ corregido
   request.input('precio', sql.Decimal(10, 2), precio);
   request.input('stock', sql.Int, stock);
   request.input('id_categoria', sql.Int, id_categoria);
 
-  // Manejo dinámico de la imagen
   let queryImagen = "";
   if (imagen) {
     request.input('imagen', sql.VarChar(255), imagen);
     queryImagen = ", imagen = @imagen";
   }
 
-  
   const result = await request.query(`
     UPDATE Producto 
     SET nombre = @nombre, 
@@ -112,6 +109,7 @@ const updateProduct = async (id, { nombre, descripcion, precio, stock, id_catego
   
   return result.recordset[0];
 };
+
 const deleteProduct = async (id) => {
   const pool = await getConnection();
   const result = await pool.request()

@@ -45,16 +45,27 @@ export const createProduct = async (nombre, descripcion, precio, stock, id_categ
   return json;
 };
 
-export const updateProduct = async (id, nombre, descripcion, precio, stock, id_categoria) => {
-  const res = await fetch(`${BASE_URL}/productos/${id}`, {
+export const updateProduct = async (id, nombre, descripcion, precio, stock, id_categoria, imagen) => {
+  const formData = new FormData();
+  formData.append('nombre', nombre);
+  formData.append('descripcion', descripcion);
+  formData.append('precio', precio);
+  formData.append('stock', stock);
+  formData.append('id_categoria', id_categoria);
+ 
+  if (imagen) {
+    formData.append('imagen', imagen);
+  }
+ 
+  const res = await fetch(`http://localhost:5000/api/productos/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nombre, descripcion, precio, stock, id_categoria }),
+    body: formData, // ✅ sin Content-Type, el browser lo pone solo con el boundary
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.message || 'Error al actualizar producto');
   return json;
 };
+ 
 
 export const deleteProduct = async (id) => {
   const res = await fetch(`${BASE_URL}/productos/${id}`, { method: 'DELETE' });

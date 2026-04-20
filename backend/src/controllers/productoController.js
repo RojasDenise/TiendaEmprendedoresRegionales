@@ -38,6 +38,9 @@ const createProduct = async (req, res) => {
     const { nombre, descripcion, precio, stock, id_categoria, id_usuario } = req.body;
     const imagen = req.file ? req.file.filename : null;
 
+    console.log('📦 Body recibido:', req.body);
+    console.log('🖼️ Imagen recibida:', req.file);
+
     if (!nombre || !descripcion || !precio || !stock || !id_categoria || !id_usuario) {
       return res.status(400).json({ message: 'Complete todos los campos' });
     }
@@ -48,7 +51,7 @@ const createProduct = async (req, res) => {
     const nuevo = await productoService.createProduct({ nombre, descripcion, precio, stock, id_categoria, id_usuario, imagen });
     res.status(201).json({ message: 'Producto agregado con éxito', producto: nuevo });
   } catch (error) {
-    console.error(error);
+    console.error('❌ Error completo:', error);
     res.status(500).json({ message: 'Error al crear producto' });
   }
 };
