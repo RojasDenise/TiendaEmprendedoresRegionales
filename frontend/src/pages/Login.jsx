@@ -1,16 +1,55 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
+/**
+ * @fileoverview Componente de inicio de sesión de la plataforma.
+ * Permite al usuario autenticarse con email y contraseña.
+ * Redirige automáticamente según el rol del usuario: admin, emprendedor o cliente.
+ *
+ * @module Login
+ * @author Rojas Karen Denise; Sandoval María Victoria
+ */
+
+/** URL base de la API para las peticiones de autenticación. */
 const BASE_URL = 'http://localhost:5000/api';
 
+/**
+ * Componente Login.
+ * Renderiza el formulario de acceso a la plataforma y gestiona la autenticación del usuario.
+ *
+ * Comportamiento principal:
+ * - Envía las credenciales al endpoint de login mediante una petición POST.
+ * - Si la autenticación es exitosa, guarda el usuario en `sessionStorage`.
+ * - Redirige según el rol: id_rol 1 → /admin, id_rol 2 → /dashboard, id_rol 3 → /catalogo.
+ * - Si las credenciales son incorrectas o el servidor responde con error, muestra una alerta.
+ * - Muestra feedback de carga en el botón mientras la petición está en curso.
+ *
+ * @component
+ * @returns {JSX.Element} Formulario de inicio de sesión con marca, campos y enlace a registro.
+ */
 export default function Login() {
   const [form, setForm] = useState({ email: '', contraseña: '' });
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
   const navigate = useNavigate();
 
+  /**
+   * Actualiza el estado del formulario al modificar cualquier campo de texto.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Evento de cambio del input.
+   */
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  /**
+   * Maneja el envío del formulario de login.
+   * Envía las credenciales a la API, guarda el usuario en sessionStorage
+   * y redirige según el rol recibido en la respuesta.
+   *
+   * @async
+   * @param {React.FormEvent<HTMLFormElement>} e - Evento de envío del formulario.
+   * @returns {Promise<void>}
+   * @throws {Error} Si la respuesta del servidor no es exitosa, muestra el mensaje de error al usuario.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setCargando(true);
@@ -24,16 +63,14 @@ export default function Login() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Credenciales incorrectas.');
 
-      // Guardar sesión
       sessionStorage.setItem('user', JSON.stringify(data.user));
 
-      // Redirigir según rol
       if (data.user.id_rol === 1) {
         navigate('/admin');
       } else if (data.user.id_rol === 2) {
-        navigate('/dashboard'); // Solo emprendedores
+        navigate('/dashboard');
       } else if (data.user.id_rol === 3) {
-        navigate('/catalogo'); // Clientes van a la tienda/catálogo
+        navigate('/catalogo');
       }
     } catch (err) {
       setError(err.message);
@@ -48,9 +85,11 @@ export default function Login() {
         {/* Logo / Marca */}
         <div style={s.brand}>
           <div style={s.brandIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
+            <svg width="18" height="18" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 12h16l-2 12H10L8 12z" fill="white" stroke="white" strokeWidth="0.5" strokeLinejoin="round"/>
+              <path d="M12 12c0-2.21 1.79-4 4-4s4 1.79 4 4" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none"/>
+              <circle cx="13" cy="21" r="1" fill="#111"/>
+              <circle cx="19" cy="21" r="1" fill="#111"/>
             </svg>
           </div>
           <span style={s.brandName}>Tienda de Emprendedores Regionales</span>
@@ -93,6 +132,13 @@ export default function Login() {
   );
 }
 
+/**
+ * Estilos en línea del componente Login.
+ * Se definen como objeto para mantener el estilo junto al componente
+ * y evitar dependencias de archivos CSS externos.
+ *
+ * @type {Object}
+ */
 const s = {
   page: {
     minHeight: '100vh', display: 'flex', alignItems: 'center',

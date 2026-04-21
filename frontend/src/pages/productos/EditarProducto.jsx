@@ -4,6 +4,31 @@ import { getCategories, updateProduct } from '../../services/productoService';
 
 const BASE_URL = 'http://localhost:5000/api';
 
+/**
+ * @fileoverview Componente para editar un producto existente.
+ * Carga los datos actuales del producto y las categorías disponibles,
+ * permite modificar cualquier campo y opcionalmente reemplazar la imagen.
+ * Al guardar con éxito, redirige al listado de productos.
+ *
+ * @module EditarProducto
+ * @author Rojas Karen Denise; Sandoval María Victoria
+ */
+
+/**
+ * Componente EditarProducto.
+ * Permite a un emprendedor autenticado modificar los datos de un producto existente.
+ *
+ * Comportamiento principal:
+ * - Al montar el componente, obtiene el ID del producto desde los parámetros de la URL.
+ * - Carga en paralelo las categorías disponibles y los datos actuales del producto.
+ * - Rellena el formulario con los valores existentes para facilitar la edición.
+ * - Muestra alertas de éxito o error con desaparición automática a los 3 segundos.
+ * - Al guardar con éxito, redirige a `/dashboard/productos` tras 1.5 segundos.
+ * - La imagen es opcional: si no se selecciona una nueva, se conserva la actual.
+ *
+ * @component
+ * @returns {JSX.Element} Formulario de edición de producto con topbar, campos y botones de acción.
+ */
 export default function EditarProducto() {
   const { id } = useParams();
   const [form, setForm] = useState({ nombre: '', descripcion: '', precio: '', stock: '', id_categoria: '' });
@@ -13,6 +38,14 @@ export default function EditarProducto() {
   const [cargando, setCargando] = useState(false);
   const navigate = useNavigate();
 
+  /**
+   * Carga en paralelo las categorías disponibles y los datos del producto a editar.
+   * Inicializa el formulario con los valores actuales del producto.
+   * Si alguna petición falla, muestra un mensaje de error al usuario.
+   *
+   * @effect
+   * @dependency {string} id - ID del producto obtenido desde los parámetros de la URL.
+   */
   useEffect(() => {
     Promise.all([
       getCategories(),
@@ -29,13 +62,36 @@ export default function EditarProducto() {
     }).catch(e => mostrarMensaje(e.message, 'error'));
   }, [id]);
 
+  /**
+   * Muestra un mensaje de alerta al usuario y lo oculta automáticamente a los 3 segundos.
+   *
+   * @param {string} texto - Texto del mensaje a mostrar.
+   * @param {'success'|'error'} [tipo='success'] - Tipo de alerta: éxito o error.
+   */
   const mostrarMensaje = (texto, tipo = 'success') => {
     setMensaje({ texto, tipo });
     setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
   };
 
+  /**
+   * Actualiza el estado del formulario al modificar cualquier campo de texto.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>} e - Evento de cambio del input.
+   */
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  /**
+   * Maneja el envío del formulario.
+   * Convierte los campos numéricos al tipo correcto antes de llamar al servicio.
+   * Si se seleccionó una nueva imagen, la envía junto con los demás datos;
+   * de lo contrario, el servicio conserva la imagen existente.
+   * Muestra feedback de carga durante el proceso y redirige al listado si tiene éxito.
+   *
+   * @async
+   * @param {React.FormEvent<HTMLFormElement>} e - Evento de envío del formulario.
+   * @returns {Promise<void>}
+   * @throws {Error} Si la petición al servicio falla, muestra el mensaje de error al usuario.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setCargando(true);
@@ -142,6 +198,13 @@ export default function EditarProducto() {
   );
 }
 
+/**
+ * Estilos en línea del componente EditarProducto.
+ * Se definen como objeto para mantener el estilo junto al componente
+ * y evitar dependencias de archivos CSS externos.
+ *
+ * @type {Object}
+ */
 const s = {
   topbar: { marginBottom: '1.5rem' },
   btnVolver: {

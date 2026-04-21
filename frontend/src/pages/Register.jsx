@@ -1,26 +1,67 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
+/**
+ * @fileoverview Componente de registro de nuevos usuarios en la plataforma.
+ * Permite crear cuentas de tipo emprendedor o cliente, con validación de edad mínima
+ * y campo de reseña condicional para emprendedores.
+ * Al registrarse con éxito, redirige al login tras 2 segundos.
+ *
+ * @module Register
+ * @author Rojas Karen Denise; Sandoval María Victoria
+ */
+
+/** URL base de la API para las peticiones de autenticación. */
 const BASE_URL = 'http://localhost:5000/api';
 
+/**
+ * Componente Register.
+ * Permite a un nuevo usuario crear una cuenta en la plataforma seleccionando su rol.
+ *
+ * Comportamiento principal:
+ * - Valida que el usuario tenga al menos 16 años antes de enviar el formulario.
+ * - Limita el campo DNI a un máximo de 8 dígitos mediante validación en el handler de cambio.
+ * - Si el tipo de cuenta es emprendedor (id_rol === '2'), muestra un campo adicional de reseña.
+ * - Muestra alertas de éxito o error según la respuesta del servidor.
+ * - Al registrarse con éxito, redirige automáticamente a `/login` tras 2 segundos.
+ * - La fecha máxima del campo de nacimiento se calcula dinámicamente para reflejar la edad mínima.
+ *
+ * @component
+ * @returns {JSX.Element} Formulario de registro con validaciones, campos condicionales y enlace al login.
+ */
 export default function Register() {
   const [form, setForm] = useState({
     apellidoNombre: '', DNI: '', fecha_nacimiento: '',
-    email: '', contraseña: '', id_rol: '2',reseña: ''
+    email: '', contraseña: '', id_rol: '2', reseña: ''
   });
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
   const [cargando, setCargando] = useState(false);
   const navigate = useNavigate();
 
+  /**
+   * Actualiza el estado del formulario al modificar cualquier campo.
+   * Aplica una restricción específica para el campo DNI, limitándolo a 8 dígitos.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>} e - Evento de cambio del input.
+   */
   const handleChange = (e) => {
-  const { name, value } = e.target;
-  
-  // Campo dni 8 caracteres maximo
-  if (name === 'DNI' && value.length > 8) return;
+    const { name, value } = e.target;
+    if (name === 'DNI' && value.length > 8) return;
+    setForm({ ...form, [name]: value });
+  };
 
-  setForm({ ...form, [name]: value });
-};
+  /**
+   * Maneja el envío del formulario de registro.
+   * Valida la edad mínima del usuario antes de realizar la petición.
+   * Convierte el id_rol a entero antes de enviarlo a la API.
+   * Muestra feedback de éxito o error y redirige al login si el registro fue exitoso.
+   *
+   * @async
+   * @param {React.FormEvent<HTMLFormElement>} e - Evento de envío del formulario.
+   * @returns {Promise<void>}
+   * @throws {Error} Si la respuesta del servidor no es exitosa, muestra el mensaje de error al usuario.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setCargando(true);
@@ -30,15 +71,14 @@ export default function Register() {
     const cumple = new Date(form.fecha_nacimiento);
     let edad = hoy.getFullYear() - cumple.getFullYear();
     const m = hoy.getMonth() - cumple.getMonth();
-    if (m < 0 || (m === 0 && hoy.getDate() < cumple.getDate())) {
-      edad--;
-    }
+    if (m < 0 || (m === 0 && hoy.getDate() < cumple.getDate())) edad--;
 
     if (edad < 16) {
       setError('La edad mínima para registrarse es de 16 años.');
-      return; // Corta el envío del formulario
+      setCargando(false);
+      return;
     }
-    setCargando(true);
+
     try {
       const res = await fetch(`${BASE_URL}/auth/register`, {
         method: 'POST',
@@ -51,22 +91,32 @@ export default function Register() {
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
       setError(err.message);
-      setCargando(false);
     } finally {
       setCargando(false);
     }
   };
+
+  /**
+   * Fecha máxima permitida en el campo de nacimiento.
+   * Calculada dinámicamente restando 16 años a la fecha actual,
+   * para impedir que el usuario seleccione una edad menor a la requerida.
+   *
+   * @type {string} Fecha en formato ISO (YYYY-MM-DD).
+   */
   const fechaMaxima = new Date();
   fechaMaxima.setFullYear(fechaMaxima.getFullYear() - 16);
-  const maxDate = fechaMaxima.toISOString().split("T")[0];
+  const maxDate = fechaMaxima.toISOString().split('T')[0];
+
   return (
     <div style={s.page}>
       <div style={s.card}>
         <div style={s.brand}>
           <div style={s.brandIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
+            <svg width="18" height="18" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 12h16l-2 12H10L8 12z" fill="white" stroke="white" strokeWidth="0.5" strokeLinejoin="round"/>
+              <path d="M12 12c0-2.21 1.79-4 4-4s4 1.79 4 4" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none"/>
+              <circle cx="13" cy="21" r="1" fill="#111"/>
+              <circle cx="19" cy="21" r="1" fill="#111"/>
             </svg>
           </div>
           <span style={s.brandName}>Tienda de Emprendedores Regionales</span>
@@ -113,24 +163,22 @@ export default function Register() {
           <div style={s.campo}>
             <label style={s.label}>Tipo de cuenta</label>
             <select name="id_rol" value={form.id_rol} onChange={handleChange} style={s.input}>
-                <option value="2">Emprendedor</option>
-                <option value="3">Cliente</option> 
+              <option value="2">Emprendedor</option>
+              <option value="3">Cliente</option>
             </select>
           </div>
 
-        {form.id_rol === '2' && (
-          <div style={s.campo}>
-            <label style={s.label}>¿Qué productos pensás vender?</label>
-            <textarea 
-              name="reseña" 
-              value={form.reseña} 
-              onChange={handleChange} 
-              required 
-              style={{...s.input, minHeight: '80px', resize: 'none'}} 
-              placeholder="Contanos brevemente sobre tu emprendimiento..."
-            />
-          </div>
-        )}
+          {form.id_rol === '2' && (
+            <div style={s.campo}>
+              <label style={s.label}>¿Qué productos pensás vender?</label>
+              <textarea
+                name="reseña" value={form.reseña} onChange={handleChange} required
+                style={{ ...s.input, minHeight: '80px', resize: 'none' }}
+                placeholder="Contanos brevemente sobre tu emprendimiento..."
+              />
+            </div>
+          )}
+
           <button type="submit" disabled={cargando} style={s.btn}>
             {cargando ? 'Registrando...' : 'Crear cuenta'}
           </button>
@@ -145,6 +193,13 @@ export default function Register() {
   );
 }
 
+/**
+ * Estilos en línea del componente Register.
+ * Se definen como objeto para mantener el estilo junto al componente
+ * y evitar dependencias de archivos CSS externos.
+ *
+ * @type {Object}
+ */
 const s = {
   page: {
     minHeight: '100vh', display: 'flex', alignItems: 'center',

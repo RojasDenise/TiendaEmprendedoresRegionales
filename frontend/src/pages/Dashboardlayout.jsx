@@ -1,5 +1,20 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 
+/**
+ * @fileoverview Layout principal del dashboard de la aplicación.
+ * Provee la estructura de navegación lateral compartida por emprendedores y administradores,
+ * adaptando los ítems del menú según el rol del usuario autenticado.
+ *
+ * @module DashboardLayout
+ * @author Rojas Karen Denise; Sandoval María Victoria
+ */
+
+/**
+ * Ítems de navegación disponibles para el rol emprendedor.
+ * Incluye acceso al panel de control y al listado de productos.
+ *
+ * @type {Array<{to: string, end: boolean, label: string, icon: JSX.Element}>}
+ */
 const navEmprendedor = [
   {
     to: '/dashboard', end: true, label: 'Dashboard',
@@ -11,6 +26,12 @@ const navEmprendedor = [
   },
 ];
 
+/**
+ * Ítems de navegación disponibles para el rol administrador.
+ * Incluye acceso únicamente al panel de administración.
+ *
+ * @type {Array<{to: string, end: boolean, label: string, icon: JSX.Element}>}
+ */
 const navAdmin = [
   {
     to: '/admin', end: true, label: 'Panel admin',
@@ -18,13 +39,47 @@ const navAdmin = [
   },
 ];
 
+/**
+ * Componente DashboardLayout.
+ * Estructura de dos columnas con sidebar fijo y área de contenido principal.
+ * Adapta la navegación lateral según el rol recibido por prop.
+ *
+ * Comportamiento principal:
+ * - Lee el usuario autenticado desde `sessionStorage` para mostrar nombre e iniciales.
+ * - Genera las iniciales a partir del apellido del usuario (primeras dos letras).
+ * - Muestra los ítems de navegación correspondientes al rol: admin o emprendedor.
+ * - Al cerrar sesión, elimina el usuario de `sessionStorage` y redirige al login.
+ * - Renderiza el contenido de las rutas hijas mediante `<Outlet />`.
+ *
+ * @component
+ * @param {Object} props
+ * @param {'admin'|'emprendedor'} props.rol - Rol del usuario autenticado. Determina el menú a mostrar.
+ * @returns {JSX.Element} Layout con sidebar de navegación y área de contenido principal.
+ */
 export default function DashboardLayout({ rol }) {
   const navigate = useNavigate();
+
+  /** Usuario autenticado leído desde sessionStorage. Null si no hay sesión activa. */
   const user = JSON.parse(sessionStorage.getItem('user') || 'null');
+
+  /** Indica si el usuario tiene rol de administrador. */
   const isAdmin = rol === 'admin';
+
+  /** Lista de ítems de navegación según el rol del usuario. */
   const navItems = isAdmin ? navAdmin : navEmprendedor;
+
+  /**
+   * Iniciales del usuario generadas a partir del apellido.
+   * Se toman las primeras dos letras del primer segmento antes de la coma.
+   * Si no hay datos de usuario, se usa 'U' como valor por defecto.
+   *
+   * @type {string}
+   */
   const initials = user?.apellidoNombre?.split(',')[0].trim().slice(0, 2).toUpperCase() || 'U';
 
+  /**
+   * Elimina el usuario de sessionStorage y redirige al login.
+   */
   const handleLogout = () => {
     sessionStorage.removeItem('user');
     navigate('/login');
@@ -35,9 +90,11 @@ export default function DashboardLayout({ rol }) {
       <nav style={s.sidebar}>
         <div style={s.brand}>
           <div style={s.brandIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
+            <svg width="18" height="18" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 12h16l-2 12H10L8 12z" fill="white" stroke="white" strokeWidth="0.5" strokeLinejoin="round"/>
+              <path d="M12 12c0-2.21 1.79-4 4-4s4 1.79 4 4" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none"/>
+              <circle cx="13" cy="21" r="1" fill="#111"/>
+              <circle cx="19" cy="21" r="1" fill="#111"/>
             </svg>
           </div>
           <div>
@@ -77,6 +134,13 @@ export default function DashboardLayout({ rol }) {
   );
 }
 
+/**
+ * Estilos en línea del componente DashboardLayout.
+ * Se definen como objeto para mantener el estilo junto al componente
+ * y evitar dependencias de archivos CSS externos.
+ *
+ * @type {Object}
+ */
 const s = {
   shell: { display: 'flex', minHeight: '100vh', background: '#F7F6F3', fontFamily: "'DM Sans', sans-serif" },
   sidebar: {

@@ -1,11 +1,42 @@
 import { useEffect, useState } from 'react';
 
+/**
+ * @fileoverview Componente del panel de administración de la plataforma.
+ * Muestra métricas globales como total de productos, emprendedores activos,
+ * unidades en stock y productos con stock bajo, junto con una tabla completa
+ * de todos los productos registrados en el sistema.
+ *
+ * @module DashboardAdmin
+ * @author Rojas Karen Denise; Sandoval María Victoria
+ */
+
+/** URL base de la API para las peticiones del panel de administración. */
 const BASE_URL = 'http://localhost:5000/api';
 
+/**
+ * Componente DashboardAdmin.
+ * Vista exclusiva para administradores. Obtiene y presenta un resumen
+ * general de la actividad de la plataforma.
+ *
+ * Comportamiento principal:
+ * - Al montar el componente, obtiene todos los productos de la plataforma desde la API.
+ * - Calcula métricas derivadas: stock total, productos con stock bajo y emprendedores activos.
+ * - Agrupa los productos por emprendedor para obtener el conteo de productos por usuario.
+ * - Muestra un estado de carga mientras se obtienen los datos.
+ *
+ * @component
+ * @returns {JSX.Element} Panel con tarjetas de métricas y tabla completa de productos.
+ */
 export default function DashboardAdmin() {
   const [productos, setProductos] = useState([]);
   const [cargando, setCargando] = useState(true);
 
+  /**
+   * Obtiene todos los productos de la plataforma al montar el componente.
+   * Desactiva el estado de carga al finalizar, tanto en caso de éxito como de error.
+   *
+   * @effect
+   */
   useEffect(() => {
     fetch(`${BASE_URL}/productos`)
       .then(r => r.json())
@@ -13,16 +44,37 @@ export default function DashboardAdmin() {
       .catch(() => setCargando(false));
   }, []);
 
+  /**
+   * Suma total de unidades en stock de todos los productos de la plataforma.
+   * @type {number}
+   */
   const totalStock = productos.reduce((a, p) => a + Number(p.stock), 0);
+
+  /**
+   * Cantidad de productos con stock menor a 5 unidades.
+   * Se usa para alertar al administrador sobre posibles faltantes.
+   * @type {number}
+   */
   const stockBajo = productos.filter(p => Number(p.stock) < 5).length;
 
-  // Agrupar por emprendedor (id_usuario)
+  /**
+   * Agrupa los productos por emprendedor usando su ID de usuario.
+   * Si el producto no tiene nombre de usuario, se genera un nombre genérico.
+   * El resultado es un objeto indexado por `id_usuario`.
+   *
+   * @type {Object.<number, {id_usuario: number, nombre: string, productos: number}>}
+   */
   const porEmprendedor = productos.reduce((acc, p) => {
     const id = p.id_usuario;
     if (!acc[id]) acc[id] = { id_usuario: id, nombre: p.nombre_usuario || `Emprendedor #${id}`, productos: 0 };
     acc[id].productos++;
     return acc;
   }, {});
+
+  /**
+   * Lista de emprendedores únicos con su conteo de productos.
+   * @type {Array<{id_usuario: number, nombre: string, productos: number}>}
+   */
   const emprendedores = Object.values(porEmprendedor);
 
   return (
@@ -123,6 +175,19 @@ export default function DashboardAdmin() {
   );
 }
 
+/**
+ * Componente MetricCard.
+ * Tarjeta reutilizable que muestra una métrica con ícono, etiqueta y valor.
+ * Opcionalmente resalta el valor en rojo si representa una alerta.
+ *
+ * @component
+ * @param {Object} props
+ * @param {JSX.Element} props.icon - Ícono SVG a mostrar en la tarjeta.
+ * @param {string} props.label - Etiqueta descriptiva de la métrica.
+ * @param {string|number} props.valor - Valor numérico o formateado a mostrar.
+ * @param {boolean} [props.alerta=false] - Si es true, el valor se muestra en rojo como advertencia.
+ * @returns {JSX.Element} Tarjeta de métrica con estilos condicionales.
+ */
 function MetricCard({ icon, label, valor, alerta }) {
   return (
     <div style={s.card}>
@@ -135,6 +200,13 @@ function MetricCard({ icon, label, valor, alerta }) {
   );
 }
 
+/**
+ * Estilos en línea del componente DashboardAdmin.
+ * Se definen como objeto para mantener el estilo junto al componente
+ * y evitar dependencias de archivos CSS externos.
+ *
+ * @type {Object}
+ */
 const s = {
   topbar: {
     display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
