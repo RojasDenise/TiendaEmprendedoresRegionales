@@ -2,8 +2,42 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCategories, createProduct } from '../../services/productoService';
 
+/**
+ * @fileoverview Componente para agregar un nuevo producto.
+ * Renderiza un formulario con validaciones, carga de imagen y
+ * feedback visual al usuario. Al completarse, redirige al listado de productos.
+ *
+ * @module AgregarProducto
+ * @author Rojas Karen Denise; Sandoval María Victoria
+ */
+
+/**
+ * Estado inicial del formulario de producto.
+ * Todos los campos comienzan vacíos.
+ *
+ * @type {Object}
+ * @property {string} nombre - Nombre del producto.
+ * @property {string} descripcion - Descripción del producto.
+ * @property {string} precio - Precio del producto (se convierte a float al enviar).
+ * @property {string} stock - Stock disponible (se convierte a int al enviar).
+ * @property {string} id_categoria - ID de la categoría seleccionada.
+ */
 const formInicial = { nombre: '', descripcion: '', precio: '', stock: '', id_categoria: '' };
 
+/**
+ * Componente AgregarProducto.
+ * Permite a un emprendedor autenticado crear un nuevo producto mediante un formulario.
+ *
+ * Comportamiento principal:
+ * - Al montar el componente, carga las categorías disponibles desde la API.
+ * - Lee el usuario autenticado desde `sessionStorage` para asociar el producto.
+ * - Muestra alertas de éxito o error con desaparición automática a los 3 segundos.
+ * - Al guardar con éxito, redirige a `/dashboard/productos` tras 1.5 segundos.
+ * - Soporta carga de imagen opcional en formatos JPG, PNG o WEBP.
+ *
+ * @component
+ * @returns {JSX.Element} Formulario de alta de producto con topbar, campos y botones de acción.
+ */
 export default function AgregarProducto() {
   const [form, setForm] = useState(formInicial);
   const [categorias, setCategorias] = useState([]);
@@ -12,28 +46,59 @@ export default function AgregarProducto() {
   const [imagen, setImagen] = useState(null);
   const navigate = useNavigate();
 
+  /** Usuario autenticado leído desde sessionStorage. Null si no hay sesión activa. */
   const userRaw = sessionStorage.getItem('user');
   const user = userRaw ? JSON.parse(userRaw) : null;
 
+  /**
+   * Carga las categorías disponibles al montar el componente.
+   * Si falla, muestra un mensaje de error al usuario.
+   */
   useEffect(() => {
     getCategories()
       .then(setCategorias)
       .catch(e => mostrarMensaje('No se pudieron cargar las categorías: ' + e.message, 'error'));
   }, []);
 
+  /**
+   * Muestra un mensaje de alerta al usuario y lo oculta automáticamente a los 3 segundos.
+   *
+   * @param {string} texto - Texto del mensaje a mostrar.
+   * @param {'success'|'error'} [tipo='success'] - Tipo de alerta: éxito o error.
+   */
   const mostrarMensaje = (texto, tipo = 'success') => {
     setMensaje({ texto, tipo });
     setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
   };
 
+  /**
+   * Actualiza el estado del formulario al modificar cualquier campo de texto.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>} e - Evento de cambio del input.
+   */
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  /**
+   * Actualiza el estado de la imagen al seleccionar un archivo.
+   * Solo se guarda el primer archivo seleccionado.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Evento de cambio del input tipo file.
+   */
   const handleImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setImagen(e.target.files[0]);
     }
   };
 
-
+  /**
+   * Maneja el envío del formulario.
+   * Convierte los campos numéricos al tipo correcto antes de llamar al servicio.
+   * Muestra feedback de carga durante el proceso y redirige al listado si tiene éxito.
+   *
+   * @async
+   * @param {React.FormEvent<HTMLFormElement>} e - Evento de envío del formulario.
+   * @returns {Promise<void>}
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setCargando(true);
@@ -144,6 +209,13 @@ export default function AgregarProducto() {
   );
 }
 
+/**
+ * Estilos en línea del componente AgregarProducto.
+ * Se definen como objeto para mantener el estilo junto al componente
+ * y evitar dependencias de archivos CSS externos.
+ *
+ * @type {Object}
+ */
 const s = {
   topbar: { marginBottom: '1.5rem' },
   btnVolver: {

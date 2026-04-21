@@ -9,6 +9,37 @@ import EditarProducto from './pages/productos/EditarProducto';
 import DashboardAdmin from './pages/DashboardAdmin';
 import './index.css';
 
+/**
+ * @fileoverview Componente raíz de la aplicación.
+ * Define la estructura de enrutamiento principal usando React Router.
+ * Organiza las rutas públicas (login, registro) y las rutas protegidas
+ * por layout según el rol del usuario (emprendedor y admin).
+ *
+ * @module App
+ * @author Rojas Karen Denise; Sandoval María Victoria
+ */
+
+/**
+ * Componente App.
+ * Punto de entrada de la aplicación. Configura el enrutador y define
+ * la jerarquía de rutas anidadas según el tipo de usuario.
+ *
+ * Estructura de rutas:
+ * - `/` → Redirige a `/login`.
+ * - `/login` → Pantalla de inicio de sesión.
+ * - `/register` → Pantalla de registro de nuevos usuarios.
+ * - `/dashboard` → Layout del emprendedor con rutas anidadas:
+ *   - index → Panel de control del emprendedor.
+ *   - `productos` → Listado de productos.
+ *   - `productos/agregar` → Formulario de alta de producto.
+ *   - `productos/editar/:id` → Formulario de edición de producto.
+ * - `/admin` → Layout del administrador con rutas anidadas:
+ *   - index → Panel de administración general.
+ * - `*` → Cualquier ruta no definida redirige a `/login`.
+ *
+ * @component
+ * @returns {JSX.Element} Árbol de rutas de la aplicación envuelto en BrowserRouter.
+ */
 export default function App() {
   return (
     <BrowserRouter>

@@ -2,8 +2,33 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getProducts, deleteProduct } from '../../services/productoService';
 
+/**
+ * @fileoverview Componente para listar los productos del emprendedor autenticado.
+ * Muestra una tabla con imagen, nombre, precio, stock y estado de cada producto,
+ * con soporte para búsqueda en tiempo real y eliminación con confirmación inline.
+ *
+ * @module ListadoProductos
+ * @author Rojas Karen Denise; Sandoval María Victoria
+ */
+
+/** URL base para construir las rutas de las imágenes de productos. */
 const IMG_URL = 'http://localhost:5000/uploads/';
 
+/**
+ * Componente ListadoProductos.
+ * Permite al emprendedor autenticado visualizar, buscar y eliminar sus productos.
+ *
+ * Comportamiento principal:
+ * - Al montar el componente, obtiene el usuario autenticado desde `sessionStorage`.
+ * - Carga los productos asociados al usuario mediante el servicio correspondiente.
+ * - Permite filtrar productos por nombre en tiempo real mediante un campo de búsqueda.
+ * - La eliminación requiere una confirmación inline antes de ejecutarse.
+ * - Tras eliminar un producto, recarga el listado automáticamente.
+ * - Muestra estados vacíos diferenciados: sin productos o sin resultados de búsqueda.
+ *
+ * @component
+ * @returns {JSX.Element} Tabla de productos con topbar, buscador y acciones por fila.
+ */
 export default function ListadoProductos() {
   const [productos, setProductos] = useState([]);
   const [busqueda, setBusqueda] = useState('');
@@ -11,9 +36,15 @@ export default function ListadoProductos() {
   const [confirmando, setConfirmando] = useState(null);
   const navigate = useNavigate();
 
+  /** Usuario autenticado leído desde sessionStorage. Null si no hay sesión activa. */
   const userRaw = sessionStorage.getItem('user');
   const user = userRaw ? JSON.parse(userRaw) : null;
 
+  /**
+   * Carga los productos del emprendedor autenticado desde la API.
+   * Activa el estado de carga al inicio y lo desactiva al finalizar,
+   * independientemente de si la petición tuvo éxito o falló.
+   */
   const cargar = () => {
     setCargando(true);
     getProducts(user?.id_usuario)
@@ -22,8 +53,23 @@ export default function ListadoProductos() {
       .finally(() => setCargando(false));
   };
 
+  /**
+   * Ejecuta la carga inicial de productos al montar el componente.
+   *
+   * @effect
+   */
   useEffect(() => { cargar(); }, []);
 
+  /**
+   * Elimina un producto por su ID tras la confirmación del usuario.
+   * Si la eliminación es exitosa, cierra el estado de confirmación y recarga el listado.
+   * Si falla, muestra un alert con el mensaje de error.
+   *
+   * @async
+   * @param {number} id - ID del producto a eliminar.
+   * @returns {Promise<void>}
+   * @throws {Error} Si la petición al servicio falla, muestra el mensaje de error al usuario.
+   */
   const handleEliminar = async (id) => {
     try {
       await deleteProduct(id);
@@ -34,6 +80,12 @@ export default function ListadoProductos() {
     }
   };
 
+  /**
+   * Lista de productos filtrados según el texto de búsqueda ingresado.
+   * La comparación es insensible a mayúsculas y minúsculas.
+   *
+   * @type {Array<Object>}
+   */
   const filtrados = productos.filter(p =>
     p.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
@@ -148,6 +200,13 @@ export default function ListadoProductos() {
   );
 }
 
+/**
+ * Estilos en línea del componente ListadoProductos.
+ * Se definen como objeto para mantener el estilo junto al componente
+ * y evitar dependencias de archivos CSS externos.
+ *
+ * @type {Object}
+ */
 const s = {
   topbar: {
     display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
