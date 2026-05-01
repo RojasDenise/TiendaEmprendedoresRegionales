@@ -54,7 +54,10 @@ CREATE TABLE Usuario (
     FOREIGN KEY (id_rol) REFERENCES Rol(id_rol),
     FOREIGN KEY (id_estado) REFERENCES Estado(id_estado)
 );
+
+--Se cambia el estado de emprendedor a activo
 UPDATE Usuario SET id_estado = 1 WHERE email = 'lopezantonela@tienda.com'
+
 CREATE TABLE Cliente (
     id_cliente INT IDENTITY(1,1) PRIMARY KEY,
     apellidoNombre VARCHAR(50) NOT NULL,
@@ -78,7 +81,7 @@ CREATE TABLE Producto (
     FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario),
     FOREIGN KEY (id_estado_prod) REFERENCES Estado_Producto(id_estado_prod)
 );
-ALTER TABLE Producto ADD imagen VARCHAR(255) NULL;---nuevo para imagen sino no anda
+ALTER TABLE Producto ADD imagen VARCHAR(255) NULL;---nuevo para imagen
 
 -- 5. TABLAS DE VENTA
 CREATE TABLE Carrito (
@@ -172,13 +175,10 @@ CREATE TABLE Valoración (
     FOREIGN KEY (id_producto) REFERENCES Producto(id_producto)
 );
 
--- 7. INSERTAR DATOS INICIALES NECESARIOS
+-- 7. INSERTAR DATOS INICIALES
 INSERT INTO Rol (descripcion) VALUES ('Admin'), ('Emprendedor'), ('Cliente');
 INSERT INTO Estado (descripcion) VALUES ('Activo'), ('Pendiente'), ('Inactivo');
 INSERT INTO Estado_Producto (descripcion) VALUES ('Activo'), ('Inactivo');
 INSERT INTO Categoria (descripcion) VALUES ('General');
 
--- 8. INSERTAMOS PERFILES DE PRUEBA
-INSERT INTO Usuario (apellidoNombre, DNI, fecha_nacimiento, email, contraseña, id_rol, id_estado)
-VALUES ('Denis Emprendedor', 40123456, '1995-05-10',  'denis@tienda.com','$2b$10$wELYCD/yPRQbpH.bnV8IiuOVKYRRFEQVvxdz1jgppXC', -- Hash de 'admin123'
-2,1);
+
