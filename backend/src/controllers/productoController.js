@@ -116,8 +116,8 @@ const createProduct = async (req, res) => {
     const { nombre, descripcion, precio, stock, id_categoria, id_usuario } = req.body;
     const imagen = req.file ? req.file.filename : null;
 
-    console.log('📦 Body recibido:', req.body);
-    console.log('🖼️ Imagen recibida:', req.file);
+    console.log('Body recibido:', req.body);
+    console.log('Imagen recibida:', req.file);
 
     if (!nombre || !descripcion || !precio || !stock || !id_categoria || !id_usuario) {
       return res.status(400).json({ message: 'Complete todos los campos' });

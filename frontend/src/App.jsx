@@ -7,6 +7,10 @@ import ListadoProductos from './pages/productos/ListadoProductos';
 import AgregarProducto from './pages/productos/AgregarProducto';
 import EditarProducto from './pages/productos/EditarProducto';
 import DashboardAdmin from './pages/DashboardAdmin';
+import ClienteLayout from './pages/cliente/ClienteLayout';
+import Catalogo from './pages/cliente/Catalogo';
+import DetalleProducto from './pages/cliente/DetalleProducto';
+import MisCompras from './pages/cliente/MisCompras';
 import './index.css';
 
 /**
@@ -57,6 +61,12 @@ export default function App() {
 
         <Route path="/admin" element={<DashboardLayout rol="admin" />}>
           <Route index element={<DashboardAdmin />} />
+        </Route>
+        
+        <Route path="/catalogo" element={<ClienteLayout />}>
+          <Route index element={<Catalogo />} />
+          <Route path="producto/:id" element={<DetalleProducto />} />
+          <Route path="mis-compras" element={<MisCompras />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />

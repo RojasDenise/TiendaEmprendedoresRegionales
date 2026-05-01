@@ -158,7 +158,7 @@ const updateProduct = async (id, { nombre, descripcion, precio, stock, id_catego
 
   request.input('id', sql.Int, parseInt(id));
   request.input('nombre', sql.VarChar(50), nombre);
-  request.input('descripcion', sql.VarChar(200), descripcion);  // ✅ corregido
+  request.input('descripcion', sql.VarChar(200), descripcion); 
   request.input('precio', sql.Decimal(10, 2), precio);
   request.input('stock', sql.Int, stock);
   request.input('id_categoria', sql.Int, id_categoria);
