@@ -5,7 +5,7 @@ import { getProducts, getCategories } from '../../services/productoService';
 /**
  * @fileoverview Catálogo de productos del cliente.
  * Grid de productos con filtros por categoría y buscador.
- * Muestra el nombre del emprendedor en cada card.
+ * Muestra el nombre del emprendimiento en cada card.
  *
  * @module Catalogo
  * @author Rojas Karen Denise; Sandoval María Victoria
@@ -13,17 +13,9 @@ import { getProducts, getCategories } from '../../services/productoService';
 
 const IMG_URL = 'http://localhost:5000/uploads/';
 
-/** Genera iniciales a partir del apellidoNombre del emprendedor. */
+/** Genera iniciales a partir del nombre del emprendimiento. */
 const getInitials = (nombre = '') =>
-  nombre.split(',')[0].trim().slice(0, 2).toUpperCase() || '??';
-
-/** Estrella SVG para el rating */
-const Estrella = ({ llena }) => (
-  <svg width="12" height="12" viewBox="0 0 24 24"
-    fill={llena ? '#F59E0B' : 'none'} stroke="#F59E0B" strokeWidth="1.5">
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-  </svg>
-);
+  nombre.trim().slice(0, 2).toUpperCase() || '??';
 
 export default function Catalogo() {
   const [productos,   setProductos]   = useState([]);
@@ -48,7 +40,7 @@ export default function Catalogo() {
       catActiva === 'todos' || p.id_categoria === parseInt(catActiva);
     const coincideBusqueda =
       p.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      (p.emprendedor_nombre || '').toLowerCase().includes(busqueda.toLowerCase());
+      (p.nombreEmprendimiento || '').toLowerCase().includes(busqueda.toLowerCase());
     return coincideCategoria && coincideBusqueda;
   });
 
@@ -60,7 +52,6 @@ export default function Catalogo() {
           <h1 style={s.titulo}>Catálogo</h1>
           <p style={s.subtitulo}>{productos.length} productos disponibles</p>
         </div>
-        {/* Buscador */}
         <div style={s.buscadorWrap}>
           <svg style={s.buscadorIcon} width="14" height="14" viewBox="0 0 24 24"
             fill="none" stroke="#aaa" strokeWidth="2">
@@ -131,9 +122,11 @@ export default function Catalogo() {
 
                 {/* Emprendedor */}
                 <div style={s.emprendedor}>
-                  <div style={s.avatarEmp}>{getInitials(p.emprendedor_nombre)}</div>
+                  <div style={s.avatarEmp}>
+                    {getInitials(p.nombreEmprendimiento || p.nombre_usuario)}
+                  </div>
                   <span style={s.emprendedorNombre}>
-                    {p.emprendedor_nombre?.split(',')[0]?.trim() || '—'}
+                    {p.nombreEmprendimiento || p.nombre_usuario || '—'}
                   </span>
                 </div>
 
@@ -141,9 +134,7 @@ export default function Catalogo() {
                   <span style={s.precio}>
                     ${Number(p.precio).toLocaleString('es-AR')}
                   </span>
-                  <button style={s.btnAgregar}>
-                    Agregar
-                  </button>
+                  <button style={s.btnAgregar}>Agregar</button>
                 </div>
               </div>
             </div>
@@ -162,10 +153,10 @@ const s = {
   buscadorIcon:     { position: 'absolute', left: 10, pointerEvents: 'none' },
   buscador:         { paddingLeft: 32, paddingRight: 12, paddingTop: 8, paddingBottom: 8, border: '0.5px solid #ddd', borderRadius: 8, fontSize: 13.5, color: '#111', outline: 'none', width: 200, background: '#fff', fontFamily: "'DM Sans', sans-serif" },
   filtros:          { display: 'flex', gap: 8, marginBottom: '1.5rem', flexWrap: 'wrap' },
-  filtroBtn:        { padding: '5px 14px', borderRadius: 20, border: '0.5px solid #ddd', background: '#fff', fontSize: 13, color: '#666', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.15s' },
+  filtroBtn:        { padding: '5px 14px', borderRadius: 20, border: '0.5px solid #ddd', background: '#fff', fontSize: 13, color: '#666', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" },
   filtroBtnActivo:  { background: '#111', color: '#fff', border: '0.5px solid #111' },
   grid:             { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 },
-  card:             { background: '#fff', border: '0.5px solid #ebebeb', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', transition: 'box-shadow 0.15s' },
+  card:             { background: '#fff', border: '0.5px solid #ebebeb', borderRadius: 12, overflow: 'hidden', cursor: 'pointer' },
   imgWrap:          { height: 160, background: '#F7F6F3', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   img:              { width: '100%', height: '100%', objectFit: 'cover' },
   sinImagen:        { display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' },

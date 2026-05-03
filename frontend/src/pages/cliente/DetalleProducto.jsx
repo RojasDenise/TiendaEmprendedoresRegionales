@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProducts } from '../../services/productoService';
+import { getProductById } from '../../services/productoService';
 import { getValoraciones, addValoracion, getFacturas } from '../../services/clienteService';
 
 /**
  * @fileoverview Detalle de un producto.
  * Muestra imagen, descripcion, info del emprendedor, promedio de estrellas
- * y lista de valoraciones. Si el cliente tiene una compra entregada de este
- * producto y aún no valoró, muestra el formulario.
+ * y lista de valoraciones.
  *
  * @module DetalleProducto
  * @author Rojas Karen Denise; Sandoval María Victoria
@@ -16,7 +15,7 @@ import { getValoraciones, addValoracion, getFacturas } from '../../services/clie
 const IMG_URL = 'http://localhost:5000/uploads/';
 
 const getInitials = (nombre = '') =>
-  nombre.split(',')[0].trim().slice(0, 2).toUpperCase() || '??';
+  nombre.trim().slice(0, 2).toUpperCase() || '??';
 
 function Estrellas({ valor, onChange, readonly = false, size = 18 }) {
   const [hover, setHover] = useState(0);
@@ -42,13 +41,12 @@ export default function DetalleProducto() {
   const navigate = useNavigate();
   const user = JSON.parse(sessionStorage.getItem('user') || 'null');
 
-  const [producto,       setProducto]       = useState(null);
-  const [valorData,      setValorData]       = useState({ promedio: 0, total: 0, valoraciones: [] });
-  const [facturaHabil,   setFacturaHabil]    = useState(null); // factura entregada con este producto
-  const [yaValoro,       setYaValoro]        = useState(false);
-  const [cargando,       setCargando]        = useState(true);
+  const [producto,     setProducto]     = useState(null);
+  const [valorData,    setValorData]     = useState({ promedio: 0, total: 0, valoraciones: [] });
+  const [facturaHabil, setFacturaHabil]  = useState(null);
+  const [yaValoro,     setYaValoro]      = useState(false);
+  const [cargando,     setCargando]      = useState(true);
 
-  // Formulario de valoracion
   const [puntaje,    setPuntaje]    = useState(0);
   const [comentario, setComentario] = useState('');
   const [enviando,   setEnviando]   = useState(false);
@@ -57,19 +55,15 @@ export default function DetalleProducto() {
 
   const cargarDatos = async () => {
     try {
-      // Cargar producto
-      const prods = await getProducts();
-      const prod = prods.find(p => p.id_producto === parseInt(id));
+      // ✅ Usa getProductById — trae el producto con JOIN a Usuario
+      const prod = await getProductById(id);
       setProducto(prod || null);
 
-      // Cargar valoraciones
       const vData = await getValoraciones(id);
       setValorData(vData);
 
-      // Verificar si el cliente (id_rol 3) puede valorar
       if (user?.id_rol === 3) {
         const facturas = await getFacturas(user.id_usuario);
-        // Buscar una factura entregada que contenga este producto y no haya sido valorada
         const factura = facturas.find(f =>
           f.id_estado_envio === 2 &&
           f.items.some(i => i.id_producto === parseInt(id))
@@ -118,16 +112,16 @@ export default function DetalleProducto() {
   if (cargando) return <div style={s.empty}>Cargando...</div>;
   if (!producto) return <div style={s.empty}>Producto no encontrado.</div>;
 
+  // ✅ Usa nombreEmprendimiento, con fallback a nombre_usuario
+  const nombreEmp = producto.nombreEmprendimiento || producto.nombre_usuario || '—';
+
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", maxWidth: 780 }}>
-      {/* Botón volver */}
       <button onClick={() => navigate('/catalogo')} style={s.btnVolver}>
         ← Volver al catálogo
       </button>
 
-      {/* Card principal */}
       <div style={s.cardPrincipal}>
-        {/* Imagen */}
         <div style={s.imgWrap}>
           {producto.imagen ? (
             <img src={`${IMG_URL}${producto.imagen}`} alt={producto.nombre} style={s.img}
@@ -143,13 +137,11 @@ export default function DetalleProducto() {
           )}
         </div>
 
-        {/* Info */}
         <div style={s.info}>
           <div style={s.categoriaBadge}>{producto.categoria_nombre}</div>
           <h1 style={s.nombre}>{producto.nombre}</h1>
           <p style={s.descripcion}>{producto.descripcion}</p>
 
-          {/* Precio y stock */}
           <div style={s.precioRow}>
             <span style={s.precio}>${Number(producto.precio).toLocaleString('es-AR')}</span>
             <span style={producto.stock > 0 ? s.badgeStock : s.badgeAgotado}>
@@ -157,7 +149,6 @@ export default function DetalleProducto() {
             </span>
           </div>
 
-          {/* Promedio de estrellas */}
           <div style={s.promedioRow}>
             <Estrellas valor={Math.round(valorData.promedio)} readonly size={16} />
             <span style={s.promedioTexto}>
@@ -166,20 +157,17 @@ export default function DetalleProducto() {
             </span>
           </div>
 
-          {/* Emprendedor */}
+          {/* ✅ Muestra nombreEmprendimiento */}
           <div style={s.empCard}>
-            <div style={s.avatarEmp}>{getInitials(producto.emprendedor_nombre)}</div>
+            <div style={s.avatarEmp}>{getInitials(nombreEmp)}</div>
             <div>
               <div style={s.empLabel}>Emprendedor</div>
-              <div style={s.empNombre}>
-                {producto.emprendedor_nombre?.split(',')[0]?.trim() || '—'}
-              </div>
+              <div style={s.empNombre}>{nombreEmp}</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Formulario de valoracion */}
       {user?.id_rol === 3 && facturaHabil && !yaValoro && (
         <div style={s.seccion}>
           <h2 style={s.seccionTitulo}>Valorar este producto</h2>
@@ -196,8 +184,7 @@ export default function DetalleProducto() {
           <div style={{ marginBottom: 16 }}>
             <div style={s.fieldLabel}>Comentario <span style={{ color: '#aaa', fontWeight: 400 }}>(opcional)</span></div>
             <textarea
-              rows={3}
-              style={s.textarea}
+              rows={3} style={s.textarea}
               placeholder="Contá tu experiencia con el producto..."
               value={comentario}
               onChange={e => setComentario(e.target.value)}
@@ -214,7 +201,6 @@ export default function DetalleProducto() {
         <div style={s.alertOk}>Ya valoraste este producto. ¡Gracias!</div>
       )}
 
-      {/* Lista de valoraciones */}
       <div style={s.seccion}>
         <h2 style={s.seccionTitulo}>Valoraciones ({valorData.total})</h2>
         {valorData.valoraciones.length === 0 ? (
