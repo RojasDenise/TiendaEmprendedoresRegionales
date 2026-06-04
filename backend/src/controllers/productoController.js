@@ -13,7 +13,7 @@ const productoService = require('../services/productoService');
  * Obtiene todos los productos activos de un usuario (emprendedor).
  *
  * @async
- * @function getProducts
+ * @function obtenerProductos
  * @param {import('express').Request} req - Request de Express.
  * @param {Object} req.query - Parámetros de consulta.
  * @param {string} req.query.id_usuario - ID del usuario dueño de los productos.
@@ -23,10 +23,10 @@ const productoService = require('../services/productoService');
  *
  * @throws {500} Si ocurre un error al consultar la base de datos.
  */
-const getProducts = async (req, res) => {
+const obtenerProductos = async (req, res) => {
   try {
     const { id_usuario } = req.query;
-    const productos = await productoService.getProducts(id_usuario);
+    const productos = await productoService.obtenerProductos(id_usuario);
     res.json(productos);
   } catch (error) {
     console.error(error);
@@ -38,7 +38,7 @@ const getProducts = async (req, res) => {
  * Obtiene todos los productos eliminados (lógicamente) de un usuario.
  *
  * @async
- * @function getDeletedProducts
+ * @function obtenerProductosEliminados
  * @param {import('express').Request} req - Request de Express.
  * @param {Object} req.query - Parámetros de consulta.
  * @param {string} req.query.id_usuario - ID del usuario dueño de los productos eliminados.
@@ -48,10 +48,10 @@ const getProducts = async (req, res) => {
  *
  * @throws {500} Si ocurre un error al consultar la base de datos.
  */
-const getDeletedProducts = async (req, res) => {
+const obtenerProductosEliminados = async (req, res) => {
   try {
     const { id_usuario } = req.query;
-    const productos = await productoService.getDeletedProducts(id_usuario);
+    const productos = await productoService.obtenerProductosEliminados(id_usuario);
     res.json(productos);
   } catch (error) {
     console.error(error);
@@ -63,7 +63,7 @@ const getDeletedProducts = async (req, res) => {
  * Obtiene un producto específico por su ID.
  *
  * @async
- * @function getProductById
+ * @function obtenerProductoPorId
  * @param {import('express').Request} req - Request de Express.
  * @param {Object} req.params - Parámetros de ruta.
  * @param {string} req.params.id - ID del producto a buscar.
@@ -74,9 +74,9 @@ const getDeletedProducts = async (req, res) => {
  * @throws {404} Si no existe un producto con el ID indicado.
  * @throws {500} Si ocurre un error al consultar la base de datos.
  */
-const getProductById = async (req, res) => {
+const obtenerProductoPorId = async (req, res) => {
   try {
-    const producto = await productoService.getProductById(req.params.id);
+    const producto = await productoService.obtenerProductoPorId(req.params.id);
     if (!producto) return res.status(404).json({ message: 'Producto no encontrado' });
     res.json(producto);
   } catch (error) {
@@ -93,7 +93,7 @@ const getProductById = async (req, res) => {
  * (via multipart/form-data), se guarda el nombre del archivo.
  *
  * @async
- * @function createProduct
+ * @function crearProducto
  * @param {import('express').Request} req - Request de Express.
  * @param {Object} req.body - Cuerpo de la solicitud.
  * @param {string} req.body.nombre - Nombre del producto.
@@ -111,13 +111,13 @@ const getProductById = async (req, res) => {
  * @throws {400} Si faltan campos obligatorios o precio/stock son inválidos.
  * @throws {500} Si ocurre un error al insertar en la base de datos.
  */
-const createProduct = async (req, res) => {
+const crearProducto = async (req, res) => {
   try {
     const { nombre, descripcion, precio, stock, id_categoria, id_usuario } = req.body;
     const imagen = req.file ? req.file.filename : null;
 
-    console.log('📦 Body recibido:', req.body);
-    console.log('🖼️ Imagen recibida:', req.file);
+    console.log('Body recibido:', req.body);
+    console.log('Imagen recibida:', req.file);
 
     if (!nombre || !descripcion || !precio || !stock || !id_categoria || !id_usuario) {
       return res.status(400).json({ message: 'Complete todos los campos' });
@@ -126,7 +126,7 @@ const createProduct = async (req, res) => {
       return res.status(400).json({ message: 'Precio y stock deben ser valores positivos' });
     }
 
-    const nuevo = await productoService.createProduct({ nombre, descripcion, precio, stock, id_categoria, id_usuario, imagen });
+    const nuevo = await productoService.crearProducto({ nombre, descripcion, precio, stock, id_categoria, id_usuario, imagen });
     res.status(201).json({ message: 'Producto agregado con éxito', producto: nuevo });
   } catch (error) {
     console.error('Error completo:', error);
@@ -142,7 +142,7 @@ const createProduct = async (req, res) => {
  * el campo imagen se omite de la actualización (queda `undefined`).
  *
  * @async
- * @function updateProduct
+ * @function actualizarProducto
  * @param {import('express').Request} req - Request de Express.
  * @param {Object} req.params - Parámetros de ruta.
  * @param {string} req.params.id - ID del producto a actualizar.
@@ -162,7 +162,7 @@ const createProduct = async (req, res) => {
  * @throws {404} Si no existe un producto con el ID indicado.
  * @throws {500} Si ocurre un error al actualizar en la base de datos.
  */
-const updateProduct = async (req, res) => {
+const actualizarProducto = async (req, res) => {
   try {
     const { nombre, descripcion, precio, stock, id_categoria } = req.body;
     const imagen = req.file ? req.file.filename : undefined;
@@ -174,7 +174,7 @@ const updateProduct = async (req, res) => {
       return res.status(400).json({ message: 'Precio y stock deben ser valores positivos' });
     }
 
-    const actualizado = await productoService.updateProduct(req.params.id, { nombre, descripcion, precio, stock, id_categoria, imagen });
+    const actualizado = await productoService.actualizarProducto(req.params.id, { nombre, descripcion, precio, stock, id_categoria, imagen });
     if (!actualizado) return res.status(404).json({ message: 'Producto no encontrado' });
     res.json({ message: 'Producto actualizado con éxito' });
   } catch (error) {
@@ -187,10 +187,10 @@ const updateProduct = async (req, res) => {
  * Elimina lógicamente un producto por su ID.
  *
  * No borra el registro de la base de datos, sino que lo marca
- * como eliminado. Puede ser recuperado posteriormente con `restoreProduct`.
+ * como eliminado. Puede ser recuperado posteriormente con `restaurarProducto`.
  *
  * @async
- * @function deleteProduct
+ * @function eliminarProducto
  * @param {import('express').Request} req - Request de Express.
  * @param {Object} req.params - Parámetros de ruta.
  * @param {string} req.params.id - ID del producto a eliminar.
@@ -201,9 +201,9 @@ const updateProduct = async (req, res) => {
  * @throws {404} Si no existe un producto con el ID indicado.
  * @throws {500} Si ocurre un error al eliminar en la base de datos.
  */
-const deleteProduct = async (req, res) => {
+const eliminarProducto = async (req, res) => {
   try {
-    const eliminado = await productoService.deleteProduct(req.params.id);
+    const eliminado = await productoService.eliminarProducto(req.params.id);
     if (!eliminado) return res.status(404).json({ message: 'Producto no encontrado' });
     res.json({ message: 'Producto eliminado con éxito' });
   } catch (error) {
@@ -219,7 +219,7 @@ const deleteProduct = async (req, res) => {
  * el producto en el listado activo del emprendedor.
  *
  * @async
- * @function restoreProduct
+ * @function restaurarProducto
  * @param {import('express').Request} req - Request de Express.
  * @param {Object} req.params - Parámetros de ruta.
  * @param {string} req.params.id - ID del producto a restaurar.
@@ -231,9 +231,9 @@ const deleteProduct = async (req, res) => {
  * @throws {404} Si no existe un producto con el ID indicado.
  * @throws {500} Si ocurre un error al restaurar en la base de datos.
  */
-const restoreProduct = async (req, res) => {
+const restaurarProducto = async (req, res) => {
   try {
-    const restaurado = await productoService.restoreProduct(req.params.id);
+    const restaurado = await productoService.restaurarProducto(req.params.id);
     if (!restaurado) return res.status(404).json({ message: 'Producto no encontrado' });
     res.json({ message: 'Producto restaurado con éxito' });
   } catch (error) {
@@ -242,4 +242,4 @@ const restoreProduct = async (req, res) => {
   }
 };
 
-module.exports = { getProducts, getDeletedProducts, getProductById, createProduct, updateProduct, deleteProduct, restoreProduct };
+module.exports = { obtenerProductos, obtenerProductosEliminados, obtenerProductoPorId, crearProducto, actualizarProducto, eliminarProducto, restaurarProducto };

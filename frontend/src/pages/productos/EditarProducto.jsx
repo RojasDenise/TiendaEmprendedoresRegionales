@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getCategories, updateProduct } from '../../services/productoService';
+import { obtenerCategorias, actualizarProducto } from '../../services/productoService';
 
 const BASE_URL = 'http://localhost:5000/api';
 
@@ -48,7 +48,7 @@ export default function EditarProducto() {
    */
   useEffect(() => {
     Promise.all([
-      getCategories(),
+      obtenerCategorias(),
       fetch(`${BASE_URL}/productos/${id}`).then(r => r.json()),
     ]).then(([cats, producto]) => {
       setCategorias(cats);
@@ -96,7 +96,7 @@ export default function EditarProducto() {
     e.preventDefault();
     setCargando(true);
     try {
-      await updateProduct(
+      await actualizarProducto(
         id, 
         form.nombre, 
         form.descripcion,

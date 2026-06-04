@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 // Importamos ambas funciones desde el controlador
-const { login, register } = require('../controllers/authController');
+const { iniciarSesion, registrar } = require('../controllers/authController');
 
 /**
  * @fileoverview Rutas de autenticación y acceso.
@@ -20,7 +20,7 @@ const { login, register } = require('../controllers/authController');
  * @access Público
  * @see module:authController~login
  */
-router.post('/login', login);
+router.post('/login', iniciarSesion);
 
 /**
  * @route POST /api/auth/register
@@ -29,6 +29,6 @@ router.post('/login', login);
  * @access Público
  * @see module:authController~register
  */
-router.post('/register', register);
+router.post('/register', registrar);
 
 module.exports = router;

@@ -21,7 +21,8 @@ const BASE_URL = 'http://localhost:5000/api';
  * Comportamiento principal:
  * - Valida que el usuario tenga al menos 16 años antes de enviar el formulario.
  * - Limita el campo DNI a un máximo de 8 dígitos mediante validación en el handler de cambio.
- * - Si el tipo de cuenta es emprendedor (id_rol === '2'), muestra un campo adicional de reseña.
+ * - Si el tipo de cuenta es emprendedor (id_rol === '2'), muestra campos adicionales de nombre
+ *   del emprendimiento y reseña.
  * - Muestra alertas de éxito o error según la respuesta del servidor.
  * - Al registrarse con éxito, redirige automáticamente a `/login` tras 2 segundos.
  * - La fecha máxima del campo de nacimiento se calcula dinámicamente para reflejar la edad mínima.
@@ -32,7 +33,7 @@ const BASE_URL = 'http://localhost:5000/api';
 export default function Register() {
   const [form, setForm] = useState({
     apellidoNombre: '', DNI: '', fecha_nacimiento: '',
-    email: '', contraseña: '', id_rol: '2', reseña: ''
+    email: '', contraseña: '', id_rol: '2', nombreEmprendimiento: '', reseña: ''
   });
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
@@ -169,14 +170,25 @@ export default function Register() {
           </div>
 
           {form.id_rol === '2' && (
-            <div style={s.campo}>
-              <label style={s.label}>¿Qué productos pensás vender?</label>
-              <textarea
-                name="reseña" value={form.reseña} onChange={handleChange} required
-                style={{ ...s.input, minHeight: '80px', resize: 'none' }}
-                placeholder="Contanos brevemente sobre tu emprendimiento..."
-              />
-            </div>
+            <>
+              <div style={s.campo}>
+                <label style={s.label}>Nombre del emprendimiento</label>
+                <input
+                  name="nombreEmprendimiento" value={form.nombreEmprendimiento}
+                  onChange={handleChange} required style={s.input}
+                  placeholder="Ej: Artesanías del Norte"
+                />
+              </div>
+
+              <div style={s.campo}>
+                <label style={s.label}>¿Qué productos pensás vender?</label>
+                <textarea
+                  name="reseña" value={form.reseña} onChange={handleChange} required
+                  style={{ ...s.input, minHeight: '80px', resize: 'none' }}
+                  placeholder="Contanos brevemente sobre tu emprendimiento..."
+                />
+              </div>
+            </>
           )}
 
           <button type="submit" disabled={cargando} style={s.btn}>

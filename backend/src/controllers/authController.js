@@ -9,6 +9,7 @@ const { getConnection } = require('../config/db');
  *
  * @module authController
  * @author Rojas Karen Denise; Sandoval María Victoria
+ */
 
 /**
  * Inicia sesión de un usuario o cliente.
@@ -35,7 +36,7 @@ const { getConnection } = require('../config/db');
  * @throws {403} Si el Emprendedor tiene la cuenta pendiente de aprobación.
  * @throws {500} Si ocurre un error interno en el servidor.
  */
-const login = async (req, res) => {
+const iniciarSesion = async (req, res) => {
     const { email, contraseña } = req.body;
 
     if (!email || !contraseña) {
@@ -83,7 +84,7 @@ const login = async (req, res) => {
         res.status(401).json({ message: "Credenciales incorrectas." });
 
     } catch (error) {
-        console.error("Error en login:", error.message);
+        console.error("Error en iniciarSesion:", error.message);
         res.status(500).json({ error: "Error de servidor: " + error.message });
     }
 };
@@ -112,18 +113,19 @@ const login = async (req, res) => {
  * @param {string} req.body.email - Correo electrónico del usuario.
  * @param {string} req.body.contraseña - Contraseña en texto plano (se hashea antes de guardar).
  * @param {number|string} req.body.id_rol - Rol del usuario: 2 = Emprendedor, 3 = Cliente.
- * @param {string} [req.body.reseña] - Descripción opcional del emprendedor (solo para id_rol === 2).
+ * @param {string} [req.body.nombreEmprendimiento] - Nombre del emprendimiento (solo para id_rol === 2).
+ * @param {string} [req.body.reseña] - Descripción del emprendedor (solo para id_rol === 2).
  * @param {import('express').Response} res - Response de Express.
  *
  * @returns {Promise<void>}
- *
  *
  * @throws {400} Si faltan campos obligatorios o el usuario es menor de 16 años.
  * @throws {409} Si el DNI ya está registrado en alguna tabla.
  * @throws {500} Si ocurre un error interno en el servidor.
  */
-const register = async (req, res) => {
-    const { apellidoNombre, DNI, fecha_nacimiento, email, contraseña, id_rol, reseña } = req.body;
+const registrar = async (req, res) => {
+    // ✅ Se agrega nombreEmprendimiento a la desestructuración
+    const { apellidoNombre, DNI, fecha_nacimiento, email, contraseña, id_rol, nombreEmprendimiento, reseña } = req.body;
 
     // 1. Validación de campos obligatorios
     if (!apellidoNombre || !DNI || !fecha_nacimiento || !email || !contraseña || !id_rol) {
@@ -158,16 +160,18 @@ const register = async (req, res) => {
         // 4. Inserción según el rol
         if (parseInt(id_rol) === 2) {
             // EMPRENDEDOR → Tabla Usuario, estado inicial: 2 (pendiente de aprobación)
+            // ✅ Se agrega nombreEmprendimiento al INSERT
             await pool.request()
                 .input('nombre', sql.VarChar, apellidoNombre)
                 .input('dni', sql.VarChar, DNI)
                 .input('fecha', sql.Date, fecha_nacimiento)
                 .input('email', sql.VarChar, email)
                 .input('pass', sql.VarChar, hash)
+                .input('nombreEmprendimiento', sql.VarChar, nombreEmprendimiento || '')
                 .input('resena', sql.VarChar, reseña || '')
                 .query(`
-                    INSERT INTO Usuario (apellidoNombre, DNI, fecha_nacimiento, email, [contraseña], id_rol, id_estado, reseña)
-                    VALUES (@nombre, @dni, @fecha, @email, @pass, 2, 2, @resena)
+                    INSERT INTO Usuario (apellidoNombre, DNI, fecha_nacimiento, email, [contraseña], id_rol, id_estado, nombreEmprendimiento, reseña)
+                    VALUES (@nombre, @dni, @fecha, @email, @pass, 2, 2, @nombreEmprendimiento, @resena)
                 `);
 
             return res.status(201).json({ message: "Registro exitoso. Su solicitud de emprendedor está siendo revisada." });
@@ -189,9 +193,9 @@ const register = async (req, res) => {
         }
 
     } catch (error) {
-        console.error("Error en register:", error.message);
+        console.error("Error en registrar:", error.message);
         res.status(500).json({ error: "Error interno: " + error.message });
     }
 };
 
-module.exports = { login, register };
+module.exports = { iniciarSesion, registrar };

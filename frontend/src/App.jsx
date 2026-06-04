@@ -7,6 +7,11 @@ import ListadoProductos from './pages/productos/ListadoProductos';
 import AgregarProducto from './pages/productos/AgregarProducto';
 import EditarProducto from './pages/productos/EditarProducto';
 import DashboardAdmin from './pages/DashboardAdmin';
+import ClienteLayout from './pages/cliente/ClienteLayout';
+import Catalogo from './pages/cliente/Catalogo';
+import DetalleProducto from './pages/cliente/DetalleProducto';
+import MisCompras from './pages/cliente/MisCompras';
+import Reclamos from './pages/reclamo/reclamo';
 import './index.css';
 
 /**
@@ -33,8 +38,13 @@ import './index.css';
  *   - `productos` → Listado de productos.
  *   - `productos/agregar` → Formulario de alta de producto.
  *   - `productos/editar/:id` → Formulario de edición de producto.
+ *   - `reclamo` → Módulo de gestión de reclamos del emprendedor.
  * - `/admin` → Layout del administrador con rutas anidadas:
  *   - index → Panel de administración general.
+ * - `/catalogo` → Layout del cliente con rutas anidadas:
+ *   - index → Catálogo de productos.
+ *   - `producto/:id` → Detalle de un producto.
+ *   - `mis-compras` → Historial de compras del cliente.
  * - `*` → Cualquier ruta no definida redirige a `/login`.
  *
  * @component
@@ -53,10 +63,17 @@ export default function App() {
           <Route path="productos" element={<ListadoProductos />} />
           <Route path="productos/agregar" element={<AgregarProducto />} />
           <Route path="productos/editar/:id" element={<EditarProducto />} />
+          <Route path="reclamo" element={<Reclamos />} />
         </Route>
 
         <Route path="/admin" element={<DashboardLayout rol="admin" />}>
           <Route index element={<DashboardAdmin />} />
+        </Route>
+
+        <Route path="/catalogo" element={<ClienteLayout />}>
+          <Route index element={<Catalogo />} />
+          <Route path="producto/:id" element={<DetalleProducto />} />
+          <Route path="mis-compras" element={<MisCompras />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />
