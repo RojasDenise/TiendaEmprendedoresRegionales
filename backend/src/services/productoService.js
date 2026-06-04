@@ -1,29 +1,75 @@
 const sql = require('mssql');
 const { getConnection } = require('../config/db');
 
-/**
- * @fileoverview Servicio de productos.
- * Contiene la lógica de acceso a datos para la tabla `Producto`,
- * incluyendo consultas con JOINs, eliminación lógica y restauración.
- *
- * @module productoService
- * @author Rojas Karen Denise; Sandoval María Victoria
- */
+// ====================================================================
+// PATRÓN OBSERVER - ObserverStock
+// ====================================================================
+
+// Lista de observadores registrados (Clientes y Emprendedores)
+const observadores = [];
 
 /**
- * Obtiene todos los productos activos (id_estado_prod = 1).
- * Si se proporciona un id_usuario, filtra los productos de ese emprendedor.
- * Incluye categoría, estado y nombre del emprendimiento mediante JOINs.
- *
- * @async
- * @function obtenerProductos
- * @param {number|null} [id_usuario=null] - ID del usuario para filtrar.
- * @returns {Promise<Object[]>} Lista de productos activos.
+ * Agrega un observador a la lista.
+ * @param {Object} obs - Debe tener un método actualizar(producto, mensaje)
  */
+const agregarObservador = (obs) => {
+  observadores.push(obs);
+};
+
+/**
+ * Elimina un observador de la lista.
+ */
+const eliminarObservador = (obs) => {
+  const index = observadores.indexOf(obs);
+  if (index > -1) observadores.splice(index, 1);
+};
+
+/**
+ * Notifica a todos los observadores registrados.
+ */
+const notificarObservadores = (producto, mensaje) => {
+  observadores.forEach(obs => obs.actualizar(producto, mensaje));
+};
+
+/**
+ * Verifica si el stock bajó del mínimo y notifica si es necesario.
+ */
+const verificarStock = (producto) => {
+  const STOCK_MINIMO = 5; // podés moverlo a .env si querés
+  if (producto.stock <= STOCK_MINIMO) {
+    const mensaje = `⚠️ Stock bajo: el producto "${producto.nombre}" tiene solo ${producto.stock} unidades disponibles.`;
+    notificarObservadores(producto, mensaje);
+  }
+};
+
+// Observador Emprendedor: imprime en consola (simulación de alerta interna)
+const observadorEmprendedor = {
+  actualizar: (producto, mensaje) => {
+    console.log(`[ALERTA EMPRENDEDOR] ${mensaje}`);
+    // Aquí podrías enviar un email, push notification, etc.
+  }
+};
+
+// Observador Cliente: imprime en consola (simulación de notificación)
+const observadorCliente = {
+  actualizar: (producto, mensaje) => {
+    console.log(`[NOTIFICACIÓN CLIENTE] ${mensaje}`);
+    // Aquí podrías guardar en una tabla Notificaciones, enviar email, etc.
+  }
+};
+
+// Registrar observadores al iniciar el módulo
+agregarObservador(observadorEmprendedor);
+agregarObservador(observadorCliente);
+
+// ====================================================================
+// SERVICIOS DE PRODUCTO
+// ====================================================================
+
 const obtenerProductos = async (id_usuario = null) => {
   const pool = await getConnection();
   const request = pool.request();
-  
+
   let query = `
     SELECT p.*, 
            c.descripcion AS categoria_nombre, 
@@ -47,14 +93,6 @@ const obtenerProductos = async (id_usuario = null) => {
   return result.recordset;
 };
 
-/**
- * Obtiene todos los productos eliminados lógicamente (id_estado_prod = 2).
- *
- * @async
- * @function obtenerProductosEliminados
- * @param {number|null} [id_usuario=null] - ID del usuario para filtrar.
- * @returns {Promise<Object[]>} Lista de productos eliminados.
- */
 const obtenerProductosEliminados = async (id_usuario = null) => {
   const pool = await getConnection();
   const request = pool.request();
@@ -79,15 +117,6 @@ const obtenerProductosEliminados = async (id_usuario = null) => {
   return result.recordset;
 };
 
-/**
- * Obtiene un producto activo por su ID.
- * Incluye categoría, estado y datos del emprendedor mediante JOINs.
- *
- * @async
- * @function obtenerProductoPorId
- * @param {number|string} id - ID del producto a buscar.
- * @returns {Promise<Object|null>} El producto encontrado, o null si no existe.
- */
 const obtenerProductoPorId = async (id) => {
   const pool = await getConnection();
   const result = await pool.request()
@@ -107,14 +136,6 @@ const obtenerProductoPorId = async (id) => {
   return result.recordset[0] || null;
 };
 
-/**
- * Inserta un nuevo producto en la base de datos con estado activo (id_estado_prod = 1).
- *
- * @async
- * @function crearProducto
- * @param {Object} producto - Datos del producto a crear.
- * @returns {Promise<Object>} El producto recién insertado.
- */
 const crearProducto = async ({ nombre, descripcion, precio, stock, id_categoria, id_usuario, imagen }) => {
   const pool = await getConnection();
   const result = await pool.request()
@@ -131,18 +152,15 @@ const crearProducto = async ({ nombre, descripcion, precio, stock, id_categoria,
       OUTPUT INSERTED.*
       VALUES (@nombre, @descripcion, @precio, @stock, @id_categoria, @id_usuario, @estado, @imagen)
     `);
-  return result.recordset[0];
+
+  const producto = result.recordset[0];
+
+  // Observer: verificar stock al crear
+  verificarStock(producto);
+
+  return producto;
 };
 
-/**
- * Actualiza los datos de un producto existente.
- *
- * @async
- * @function actualizarProducto
- * @param {number|string} id - ID del producto a actualizar.
- * @param {Object} datos - Nuevos datos del producto.
- * @returns {Promise<Object|undefined>} El producto actualizado.
- */
 const actualizarProducto = async (id, { nombre, descripcion, precio, stock, id_categoria, imagen }) => {
   const pool = await getConnection();
   const request = pool.request();
@@ -169,21 +187,18 @@ const actualizarProducto = async (id, { nombre, descripcion, precio, stock, id_c
         id_categoria = @id_categoria
         ${queryImagen}
     WHERE id_producto = @id;
-    
+
     SELECT * FROM Producto WHERE id_producto = @id;
   `);
-  
-  return result.recordset[0];
+
+  const producto = result.recordset[0];
+
+  // Observer: verificar stock al actualizar
+  verificarStock(producto);
+
+  return producto;
 };
 
-/**
- * Elimina lógicamente un producto cambiando su id_estado_prod a 2.
- *
- * @async
- * @function eliminarProducto
- * @param {number|string} id - ID del producto a eliminar.
- * @returns {Promise<boolean>}
- */
 const eliminarProducto = async (id) => {
   const pool = await getConnection();
   const result = await pool.request()
@@ -192,14 +207,6 @@ const eliminarProducto = async (id) => {
   return result.rowsAffected[0] > 0;
 };
 
-/**
- * Restaura un producto eliminado lógicamente cambiando su id_estado_prod a 1.
- *
- * @async
- * @function restaurarProducto
- * @param {number|string} id - ID del producto a restaurar.
- * @returns {Promise<boolean>}
- */
 const restaurarProducto = async (id) => {
   const pool = await getConnection();
   const result = await pool.request()
@@ -208,12 +215,15 @@ const restaurarProducto = async (id) => {
   return result.rowsAffected[0] > 0;
 };
 
-module.exports = { 
+module.exports = {
   obtenerProductos,
   obtenerProductosEliminados,
   obtenerProductoPorId,
   crearProducto,
   actualizarProducto,
   eliminarProducto,
-  restaurarProducto
+  restaurarProducto,
+  // Exportar para uso externo si se necesita registrar observadores dinámicamente
+  agregarObservador,
+  eliminarObservador
 };

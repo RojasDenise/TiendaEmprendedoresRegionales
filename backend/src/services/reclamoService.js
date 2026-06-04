@@ -1,6 +1,81 @@
 const sql = require('mssql');
 const { getConnection } = require('../config/db');
 
+// ====================================================================
+// FUNCIONES INTERNAS (desacopladas por responsabilidad)
+// ====================================================================
+
+/**
+ * Inserta un nuevo mensaje en Mensaje_Reclamo.
+ * Responsabilidad: MensajeReclamo
+ */
+const insertarMensaje = async (pool, contenido, fecha) => {
+  const result = await pool.request()
+    .input('contenido', sql.VarChar(255), contenido)
+    .input('fecha', sql.DateTime, fecha)
+    .query(`
+      INSERT INTO Mensaje_Reclamo (contenido, fecha_emision_mensaje)
+      OUTPUT INSERTED.id_mensaje
+      VALUES (@contenido, @fecha)
+    `);
+  return result.recordset[0].id_mensaje;
+};
+
+/**
+ * Actualiza el estado y el mensaje de un reclamo.
+ * Responsabilidad: EstadoReclamo
+ */
+const actualizarEstadoReclamo = async (pool, id_reclamo, id_estadoReclamo, id_mensaje = null) => {
+  const request = pool.request()
+    .input('id_reclamo', sql.Int, id_reclamo)
+    .input('id_estadoReclamo', sql.Int, id_estadoReclamo);
+
+  if (id_mensaje) {
+    request.input('id_mensaje', sql.Int, id_mensaje);
+    await request.query(`
+      UPDATE Reclamo 
+      SET id_estadoReclamo = @id_estadoReclamo,
+          id_mensaje = @id_mensaje
+      WHERE id_reclamo = @id_reclamo
+    `);
+  } else {
+    await request.query(`
+      UPDATE Reclamo 
+      SET id_estadoReclamo = @id_estadoReclamo
+      WHERE id_reclamo = @id_reclamo
+    `);
+  }
+};
+
+/**
+ * Obtiene el id numérico de un estado por su descripción.
+ */
+const obtenerIdEstado = async (pool, descripcion) => {
+  const result = await pool.request()
+    .input('descripcion', sql.VarChar(50), descripcion)
+    .query(`SELECT id_estadoReclamo FROM Estado_Reclamo WHERE descripcion = @descripcion`);
+  return result.recordset[0].id_estadoReclamo;
+};
+
+/**
+ * Verifica que el reclamo existe y devuelve su estado actual.
+ */
+const verificarReclamo = async (pool, id_reclamo) => {
+  const result = await pool.request()
+    .input('id_reclamo', sql.Int, id_reclamo)
+    .query(`
+      SELECT r.id_reclamo, er.descripcion AS estado
+      FROM Reclamo r
+      JOIN Estado_Reclamo er ON r.id_estadoReclamo = er.id_estadoReclamo
+      WHERE r.id_reclamo = @id_reclamo
+    `);
+  return result.recordset[0] || null;
+};
+
+// ====================================================================
+// SERVICIOS PÚBLICOS
+// ====================================================================
+
 const obtenerReclamos = async (id_usuario) => {
   const pool = await getConnection();
   const result = await pool.request()
@@ -64,38 +139,19 @@ const responderReclamo = async (id_reclamo, id_usuario, contenido) => {
 
   const pool = await getConnection();
 
-  const check = await pool.request()
-    .input('id_reclamo', sql.Int, parseInt(id_reclamo))
-    .query(`
-      SELECT r.id_reclamo, er.descripcion AS estado
-      FROM Reclamo r
-      JOIN Estado_Reclamo er ON r.id_estadoReclamo = er.id_estadoReclamo
-      WHERE r.id_reclamo = @id_reclamo
-    `);
-
-  if (!check.recordset[0]) throw new Error('Reclamo no encontrado');
-  if (check.recordset[0].estado === 'Resuelto') {
+  // Verificar existencia y estado
+  const reclamo = await verificarReclamo(pool, parseInt(id_reclamo));
+  if (!reclamo) throw new Error('Reclamo no encontrado');
+  if (reclamo.estado === 'Resuelto') {
     throw new Error('No se puede responder un reclamo que ya fue resuelto');
   }
 
-  const msgResult = await pool.request()
-    .input('contenido', sql.VarChar(255), contenido.trim())
-    .input('fecha', sql.DateTime, new Date())
-    .query(`
-      INSERT INTO Mensaje_Reclamo (contenido, fecha_emision_mensaje)
-      OUTPUT INSERTED.id_mensaje
-      VALUES (@contenido, @fecha)
-    `);
+  // Delega a MensajeReclamo
+  const id_mensaje = await insertarMensaje(pool, contenido.trim(), new Date());
 
-  const id_mensaje = msgResult.recordset[0].id_mensaje;
-
-  await pool.request()
-    .input('id_reclamo', sql.Int, parseInt(id_reclamo))
-    .input('id_mensaje', sql.Int, id_mensaje)
-    .query(`
-      UPDATE Reclamo SET id_mensaje = @id_mensaje
-      WHERE id_reclamo = @id_reclamo
-    `);
+  // Delega a EstadoReclamo
+  const id_estadoRespondido = await obtenerIdEstado(pool, 'Respondido');
+  await actualizarEstadoReclamo(pool, parseInt(id_reclamo), id_estadoRespondido, id_mensaje);
 
   return { mensaje: 'Respuesta registrada con éxito', id_mensaje };
 };
@@ -103,32 +159,16 @@ const responderReclamo = async (id_reclamo, id_usuario, contenido) => {
 const resolverReclamo = async (id_reclamo) => {
   const pool = await getConnection();
 
-  const check = await pool.request()
-    .input('id_reclamo', sql.Int, parseInt(id_reclamo))
-    .query(`
-      SELECT r.id_reclamo, er.descripcion AS estado
-      FROM Reclamo r
-      JOIN Estado_Reclamo er ON r.id_estadoReclamo = er.id_estadoReclamo
-      WHERE r.id_reclamo = @id_reclamo
-    `);
-
-  if (!check.recordset[0]) throw new Error('Reclamo no encontrado');
-  if (check.recordset[0].estado === 'Resuelto') {
+  // Verificar existencia y estado
+  const reclamo = await verificarReclamo(pool, parseInt(id_reclamo));
+  if (!reclamo) throw new Error('Reclamo no encontrado');
+  if (reclamo.estado === 'Resuelto') {
     throw new Error('El reclamo ya se encuentra resuelto');
   }
 
-  const estadoResult = await pool.request()
-    .query(`SELECT id_estadoReclamo FROM Estado_Reclamo WHERE descripcion = 'Resuelto'`);
-
-  const id_estadoResuelto = estadoResult.recordset[0].id_estadoReclamo;
-
-  await pool.request()
-    .input('id_reclamo', sql.Int, parseInt(id_reclamo))
-    .input('id_estadoReclamo', sql.Int, id_estadoResuelto)
-    .query(`
-      UPDATE Reclamo SET id_estadoReclamo = @id_estadoReclamo
-      WHERE id_reclamo = @id_reclamo
-    `);
+  // Delega a EstadoReclamo
+  const id_estadoResuelto = await obtenerIdEstado(pool, 'Resuelto');
+  await actualizarEstadoReclamo(pool, parseInt(id_reclamo), id_estadoResuelto);
 
   return { mensaje: 'El reclamo ha sido marcado como resuelto' };
 };
