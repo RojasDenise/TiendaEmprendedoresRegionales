@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getFacturas, addValoracion, addReclamo } from '../../services/clienteService';
+import { obtenerFacturas, agregarValoracion, agregarReclamo } from '../../services/clienteService';
 
 /**
  * @fileoverview Mis compras del cliente.
@@ -43,7 +43,7 @@ function ModalValoracion({ factura, item, onClose, id_cliente, onExito }) {
     if (puntaje === 0) return setError('Seleccioná una puntuación');
     setEnviando(true);
     try {
-      await addValoracion({
+      await agregarValoracion({
         id_factura:  factura.id_factura,
         id_producto: item.id_producto,
         id_cliente,
@@ -101,7 +101,7 @@ function ModalReclamo({ factura, onClose, id_cliente, onExito }) {
     if (!motivo.trim() || !descripcion.trim()) return setError('Complete todos los campos');
     setEnviando(true);
     try {
-      await addReclamo({ id_factura: factura.id_factura, id_cliente, motivo, descripcion });
+      await agregarReclamo({ id_factura: factura.id_factura, id_cliente, motivo, descripcion });
       onExito('¡Reclamo registrado con éxito!');
       onClose();
     } catch (e) {
@@ -156,7 +156,7 @@ export default function MisCompras() {
 
   const cargar = async () => {
     try {
-      const data = await getFacturas(user.id_usuario);
+      const data = await obtenerFacturas(user.id_usuario);
       setFacturas(data);
     } catch (e) {
       console.error(e);

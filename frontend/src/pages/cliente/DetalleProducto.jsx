@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProductById } from '../../services/productoService';
-import { getValoraciones, addValoracion, getFacturas } from '../../services/clienteService';
+import { obtenerProductoPorId } from '../../services/productoService';
+import { obtenerValoraciones, agregarValoracion, obtenerFacturas } from '../../services/clienteService';
 
 /**
  * @fileoverview Detalle de un producto.
@@ -55,15 +55,15 @@ export default function DetalleProducto() {
 
   const cargarDatos = async () => {
     try {
-      // ✅ Usa getProductById — trae el producto con JOIN a Usuario
-      const prod = await getProductById(id);
+      // ✅ Usa obtenerProductoPorId — trae el producto con JOIN a Usuario
+      const prod = await obtenerProductoPorId(id);
       setProducto(prod || null);
 
-      const vData = await getValoraciones(id);
+      const vData = await obtenerValoraciones(id);
       setValorData(vData);
 
       if (user?.id_rol === 3) {
-        const facturas = await getFacturas(user.id_usuario);
+        const facturas = await obtenerFacturas(user.id_usuario);
         const factura = facturas.find(f =>
           f.id_estado_envio === 2 &&
           f.items.some(i => i.id_producto === parseInt(id))
@@ -91,7 +91,7 @@ export default function DetalleProducto() {
     if (puntaje === 0) return setError('Seleccioná una puntuación');
     setEnviando(true);
     try {
-      await addValoracion({
+      await agregarValoracion({
         id_factura:  facturaHabil.id_factura,
         id_producto: parseInt(id),
         id_cliente:  user.id_usuario,
@@ -100,7 +100,7 @@ export default function DetalleProducto() {
       });
       setMensajeOk('¡Valoración registrada con éxito!');
       setYaValoro(true);
-      const vData = await getValoraciones(id);
+      const vData = await obtenerValoraciones(id);
       setValorData(vData);
     } catch (e) {
       setError(e.message);

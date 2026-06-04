@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getProducts, deleteProduct } from '../../services/productoService';
+import { obtenerProductos, eliminarProducto } from '../../services/productoService';
 
 /**
  * @fileoverview Componente para listar los productos del emprendedor autenticado.
@@ -47,7 +47,7 @@ export default function ListadoProductos() {
    */
   const cargar = () => {
     setCargando(true);
-    getProducts(user?.id_usuario)
+    obtenerProductos(user?.id_usuario)
       .then(setProductos)
       .catch(console.error)
       .finally(() => setCargando(false));
@@ -72,7 +72,7 @@ export default function ListadoProductos() {
    */
   const handleEliminar = async (id) => {
     try {
-      await deleteProduct(id);
+      await eliminarProducto(id);
       setConfirmando(null);
       cargar();
     } catch (e) {

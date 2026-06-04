@@ -36,7 +36,7 @@ const { getConnection } = require('../config/db');
  * @throws {403} Si el Emprendedor tiene la cuenta pendiente de aprobación.
  * @throws {500} Si ocurre un error interno en el servidor.
  */
-const login = async (req, res) => {
+const iniciarSesion = async (req, res) => {
     const { email, contraseña } = req.body;
 
     if (!email || !contraseña) {
@@ -84,7 +84,7 @@ const login = async (req, res) => {
         res.status(401).json({ message: "Credenciales incorrectas." });
 
     } catch (error) {
-        console.error("Error en login:", error.message);
+        console.error("Error en iniciarSesion:", error.message);
         res.status(500).json({ error: "Error de servidor: " + error.message });
     }
 };
@@ -123,7 +123,7 @@ const login = async (req, res) => {
  * @throws {409} Si el DNI ya está registrado en alguna tabla.
  * @throws {500} Si ocurre un error interno en el servidor.
  */
-const register = async (req, res) => {
+const registrar = async (req, res) => {
     // ✅ Se agrega nombreEmprendimiento a la desestructuración
     const { apellidoNombre, DNI, fecha_nacimiento, email, contraseña, id_rol, nombreEmprendimiento, reseña } = req.body;
 
@@ -193,9 +193,9 @@ const register = async (req, res) => {
         }
 
     } catch (error) {
-        console.error("Error en register:", error.message);
+        console.error("Error en registrar:", error.message);
         res.status(500).json({ error: "Error interno: " + error.message });
     }
 };
 
-module.exports = { login, register };
+module.exports = { iniciarSesion, registrar };

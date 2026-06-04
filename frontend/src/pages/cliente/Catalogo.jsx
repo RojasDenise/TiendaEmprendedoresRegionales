@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getProducts, getCategories } from '../../services/productoService';
+import { obtenerProductos, obtenerCategorias } from '../../services/productoService';
 
 /**
  * @fileoverview Catálogo de productos del cliente.
@@ -26,7 +26,7 @@ export default function Catalogo() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    Promise.all([getProducts(), getCategories()])
+    Promise.all([obtenerProductos(), obtenerCategorias()])
       .then(([prods, cats]) => {
         setProductos(prods);
         setCategorias(cats);

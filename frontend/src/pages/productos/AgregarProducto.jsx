@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCategories, createProduct } from '../../services/productoService';
+import { obtenerCategorias, crearProducto } from '../../services/productoService';
 
 /**
  * @fileoverview Componente para agregar un nuevo producto.
@@ -55,7 +55,7 @@ export default function AgregarProducto() {
    * Si falla, muestra un mensaje de error al usuario.
    */
   useEffect(() => {
-    getCategories()
+    obtenerCategorias()
       .then(setCategorias)
       .catch(e => mostrarMensaje('No se pudieron cargar las categorías: ' + e.message, 'error'));
   }, []);
@@ -103,7 +103,7 @@ export default function AgregarProducto() {
     e.preventDefault();
     setCargando(true);
     try {
-      await createProduct(
+      await crearProducto(
         form.nombre, form.descripcion,
         parseFloat(form.precio), parseInt(form.stock),
         parseInt(form.id_categoria), user?.id_usuario || 1,

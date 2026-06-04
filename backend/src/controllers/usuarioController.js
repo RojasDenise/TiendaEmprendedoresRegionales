@@ -13,12 +13,12 @@ const { getConnection } = require('../config/db');
  * Retorna todos los emprendedores con estado pendiente (id_estado = 2).
  *
  * @async
- * @function getSolicitudes
+ * @function obtenerSolicitudes
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @returns {Promise<void>}
  */
-const getSolicitudes = async (req, res) => {
+const obtenerSolicitudes = async (req, res) => {
     try {
         const pool = await getConnection();
         const result = await pool.request().query(`
@@ -30,7 +30,7 @@ const getSolicitudes = async (req, res) => {
         `);
         res.json(result.recordset);
     } catch (error) {
-        console.error('Error en getSolicitudes:', error.message);
+        console.error('Error en obtenerSolicitudes:', error.message);
         res.status(500).json({ error: 'Error interno: ' + error.message });
     }
 };
@@ -39,12 +39,12 @@ const getSolicitudes = async (req, res) => {
  * Retorna todos los emprendedores activos (id_estado = 1).
  *
  * @async
- * @function getEmprendedoresActivos
+ * @function obtenerEmprendedoresActivos
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @returns {Promise<void>}
  */
-const getEmprendedoresActivos = async (req, res) => {
+const obtenerEmprendedoresActivos = async (req, res) => {
     try {
         const pool = await getConnection();
         const result = await pool.request().query(`
@@ -56,7 +56,7 @@ const getEmprendedoresActivos = async (req, res) => {
         `);
         res.json(result.recordset);
     } catch (error) {
-        console.error('Error en getEmprendedoresActivos:', error.message);
+        console.error('Error en obtenerEmprendedoresActivos:', error.message);
         res.status(500).json({ error: 'Error interno: ' + error.message });
     }
 };
@@ -111,4 +111,4 @@ const rechazarEmprendedor = async (req, res) => {
     }
 };
 
-module.exports = { getSolicitudes, getEmprendedoresActivos, aprobarEmprendedor, rechazarEmprendedor };
+module.exports = { obtenerSolicitudes, obtenerEmprendedoresActivos, aprobarEmprendedor, rechazarEmprendedor };

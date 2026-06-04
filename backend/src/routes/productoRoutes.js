@@ -42,44 +42,44 @@ const upload = multer({ storage });
  * @description Retorna todos los productos eliminados lógicamente de un usuario.
  * Debe definirse antes de `GET /:id` para evitar conflictos de rutas.
  * @access Privado
- * @see module:productoController~getDeletedProducts
+ * @see module:productoController~obtenerProductosEliminados
  */
-router.get('/eliminados', productoController.getDeletedProducts);
+router.get('/eliminados', productoController.obtenerProductosEliminados);
 
 /**
  * @route PUT /api/productos/:id/restaurar
  * @description Restaura un producto previamente eliminado de forma lógica.
  * @access Privado
  * @param {string} id - ID del producto a restaurar.
- * @see module:productoController~restoreProduct
+ * @see module:productoController~restaurarProducto
  */
-router.put('/:id/restaurar', productoController.restoreProduct);
+router.put('/:id/restaurar', productoController.restaurarProducto);
 
 /**
  * @route GET /api/productos
  * @description Retorna todos los productos activos de un usuario (emprendedor).
  * @access Privado
- * @see module:productoController~getProducts
+ * @see module:productoController~obtenerProductos
  */
-router.get('/', productoController.getProducts);
+router.get('/', productoController.obtenerProductos);
 
 /**
  * @route GET /api/productos/:id
  * @description Retorna un producto específico por su ID.
  * @access Privado
  * @param {string} id - ID del producto a buscar.
- * @see module:productoController~getProductById
+ * @see module:productoController~obtenerProductoPorId
  */
-router.get('/:id', productoController.getProductById);
+router.get('/:id', productoController.obtenerProductoPorId);
 
 /**
  * @route POST /api/productos
  * @description Crea un nuevo producto. Acepta una imagen opcional
  * enviada como `multipart/form-data` bajo el campo `imagen`.
  * @access Privado
- * @see module:productoController~createProduct
+ * @see module:productoController~crearProducto
  */
-router.post('/', upload.single('imagen'), productoController.createProduct);
+router.post('/', upload.single('imagen'), productoController.crearProducto);
 
 /**
  * @route PUT /api/productos/:id
@@ -87,17 +87,17 @@ router.post('/', upload.single('imagen'), productoController.createProduct);
  * opcional enviada como `multipart/form-data` bajo el campo `imagen`.
  * @access Privado
  * @param {string} id - ID del producto a actualizar.
- * @see module:productoController~updateProduct
+ * @see module:productoController~actualizarProducto
  */
-router.put('/:id', upload.single('imagen'), productoController.updateProduct);
+router.put('/:id', upload.single('imagen'), productoController.actualizarProducto);
 
 /**
  * @route DELETE /api/productos/:id
  * @description Elimina lógicamente un producto por su ID.
  * @access Privado
  * @param {string} id - ID del producto a eliminar.
- * @see module:productoController~deleteProduct
+ * @see module:productoController~eliminarProducto
  */
-router.delete('/:id', productoController.deleteProduct);
+router.delete('/:id', productoController.eliminarProducto);
 
 module.exports = router;

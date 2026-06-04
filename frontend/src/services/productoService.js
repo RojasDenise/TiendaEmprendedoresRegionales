@@ -17,7 +17,7 @@ const BASE_URL = 'http://localhost:5000/api';
  * @param {number} [id_usuario]
  * @returns {Promise<Array<Object>>}
  */
-export const getProducts = async (id_usuario) => {
+export const obtenerProductos = async (id_usuario) => {
   const url = id_usuario ? `${BASE_URL}/productos?id_usuario=${id_usuario}` : `${BASE_URL}/productos`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('Error al obtener productos');
@@ -32,7 +32,7 @@ export const getProducts = async (id_usuario) => {
  * @returns {Promise<Object>} Producto con datos del emprendedor.
  * @throws {Error} Si la respuesta del servidor no es exitosa.
  */
-export const getProductById = async (id) => {
+export const obtenerProductoPorId = async (id) => {
   const res = await fetch(`${BASE_URL}/productos/${id}`);
   if (!res.ok) throw new Error('Error al obtener el producto');
   return await res.json();
@@ -45,7 +45,7 @@ export const getProductById = async (id) => {
  * @param {number} [id_usuario]
  * @returns {Promise<Array<Object>>}
  */
-export const getDeletedProducts = async (id_usuario) => {
+export const obtenerProductosEliminados = async (id_usuario) => {
   const url = id_usuario
     ? `${BASE_URL}/productos/eliminados?id_usuario=${id_usuario}`
     : `${BASE_URL}/productos/eliminados`;
@@ -60,7 +60,7 @@ export const getDeletedProducts = async (id_usuario) => {
  * @async
  * @returns {Promise<Array<Object>>}
  */
-export const getCategories = async () => {
+export const obtenerCategorias = async () => {
   const res = await fetch(`${BASE_URL}/categorias`);
   if (!res.ok) throw new Error('Error al obtener categorías del servidor');
   return await res.json();
@@ -72,7 +72,7 @@ export const getCategories = async () => {
  * @async
  * @returns {Promise<Object>}
  */
-export const createProduct = async (nombre, descripcion, precio, stock, id_categoria, id_usuario, imagen) => {
+export const crearProducto = async (nombre, descripcion, precio, stock, id_categoria, id_usuario, imagen) => {
   const formData = new FormData();
   formData.append('nombre', nombre);
   formData.append('descripcion', descripcion);
@@ -94,7 +94,7 @@ export const createProduct = async (nombre, descripcion, precio, stock, id_categ
  * @async
  * @returns {Promise<Object>}
  */
-export const updateProduct = async (id, nombre, descripcion, precio, stock, id_categoria, imagen) => {
+export const actualizarProducto = async (id, nombre, descripcion, precio, stock, id_categoria, imagen) => {
   const formData = new FormData();
   formData.append('nombre', nombre);
   formData.append('descripcion', descripcion);
@@ -115,7 +115,7 @@ export const updateProduct = async (id, nombre, descripcion, precio, stock, id_c
  * @async
  * @returns {Promise<Object>}
  */
-export const deleteProduct = async (id) => {
+export const eliminarProducto = async (id) => {
   const res = await fetch(`${BASE_URL}/productos/${id}`, { method: 'DELETE' });
   const json = await res.json();
   if (!res.ok) throw new Error(json.message || 'Error al eliminar producto');
@@ -128,7 +128,7 @@ export const deleteProduct = async (id) => {
  * @async
  * @returns {Promise<Object>}
  */
-export const restoreProduct = async (id) => {
+export const restaurarProducto = async (id) => {
   const res = await fetch(`${BASE_URL}/productos/${id}/restaurar`, { method: 'PUT' });
   const json = await res.json();
   if (!res.ok) throw new Error(json.message || 'Error al restaurar producto');

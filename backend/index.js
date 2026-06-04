@@ -16,6 +16,7 @@ const productoRoutes = require('./src/routes/productoRoutes');
 const categoriaRoutes = require('./src/routes/categoriaRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 const usuarioRoutes = require('./src/routes/usuarioRoutes');
+const reclamoRoutes = require('./src/routes/reclamoRoutes');
 
 const app = express();
 
@@ -72,6 +73,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/productos', productoRoutes);
 app.use('/api/categorias', categoriaRoutes);
 app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/reclamos', reclamoRoutes);
 
 // 5. Manejo de Rutas no encontradas (404)
 
@@ -116,5 +118,5 @@ app.listen(PORT, async () => {
         console.error('Error crítico de conexión a la BD:', error.message);
     }
     console.log('==============================================');
-    console.log(`Rutas listas: /api/productos, /api/categorias, /api/auth, /api/usuarios`);
+    console.log(`Rutas listas: /api/productos, /api/categorias, /api/auth, /api/usuarios, /api/reclamos`);
 });

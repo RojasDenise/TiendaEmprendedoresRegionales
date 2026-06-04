@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getProducts, getDeletedProducts, restoreProduct } from '../services/productoService';
+import { obtenerProductos, obtenerProductosEliminados, restaurarProducto } from '../services/productoService';
 
 /**
  * @fileoverview Componente del panel de control del emprendedor autenticado.
@@ -45,8 +45,8 @@ export default function DashboardHome() {
    */
   const cargarDatos = () => {
     if (user?.id_usuario) {
-      getProducts(user.id_usuario).then(setProductos).catch(console.error);
-      getDeletedProducts(user.id_usuario).then(setEliminados).catch(console.error);
+      obtenerProductos(user.id_usuario).then(setProductos).catch(console.error);
+      obtenerProductosEliminados(user.id_usuario).then(setEliminados).catch(console.error);
     }
   };
 
@@ -69,7 +69,7 @@ export default function DashboardHome() {
    */
   const handleRestore = async (id) => {
     try {
-      await restoreProduct(id);
+      await restaurarProducto(id);
       cargarDatos();
     } catch (err) {
       alert(err.message);

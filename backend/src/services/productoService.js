@@ -16,11 +16,11 @@ const { getConnection } = require('../config/db');
  * Incluye categoría, estado y nombre del emprendimiento mediante JOINs.
  *
  * @async
- * @function getProducts
+ * @function obtenerProductos
  * @param {number|null} [id_usuario=null] - ID del usuario para filtrar.
  * @returns {Promise<Object[]>} Lista de productos activos.
  */
-const getProducts = async (id_usuario = null) => {
+const obtenerProductos = async (id_usuario = null) => {
   const pool = await getConnection();
   const request = pool.request();
   
@@ -51,11 +51,11 @@ const getProducts = async (id_usuario = null) => {
  * Obtiene todos los productos eliminados lógicamente (id_estado_prod = 2).
  *
  * @async
- * @function getDeletedProducts
+ * @function obtenerProductosEliminados
  * @param {number|null} [id_usuario=null] - ID del usuario para filtrar.
  * @returns {Promise<Object[]>} Lista de productos eliminados.
  */
-const getDeletedProducts = async (id_usuario = null) => {
+const obtenerProductosEliminados = async (id_usuario = null) => {
   const pool = await getConnection();
   const request = pool.request();
 
@@ -84,11 +84,11 @@ const getDeletedProducts = async (id_usuario = null) => {
  * Incluye categoría, estado y datos del emprendedor mediante JOINs.
  *
  * @async
- * @function getProductById
+ * @function obtenerProductoPorId
  * @param {number|string} id - ID del producto a buscar.
  * @returns {Promise<Object|null>} El producto encontrado, o null si no existe.
  */
-const getProductById = async (id) => {
+const obtenerProductoPorId = async (id) => {
   const pool = await getConnection();
   const result = await pool.request()
     .input('id', sql.Int, parseInt(id))
@@ -111,11 +111,11 @@ const getProductById = async (id) => {
  * Inserta un nuevo producto en la base de datos con estado activo (id_estado_prod = 1).
  *
  * @async
- * @function createProduct
+ * @function crearProducto
  * @param {Object} producto - Datos del producto a crear.
  * @returns {Promise<Object>} El producto recién insertado.
  */
-const createProduct = async ({ nombre, descripcion, precio, stock, id_categoria, id_usuario, imagen }) => {
+const crearProducto = async ({ nombre, descripcion, precio, stock, id_categoria, id_usuario, imagen }) => {
   const pool = await getConnection();
   const result = await pool.request()
     .input('nombre', sql.VarChar(200), nombre)
@@ -138,12 +138,12 @@ const createProduct = async ({ nombre, descripcion, precio, stock, id_categoria,
  * Actualiza los datos de un producto existente.
  *
  * @async
- * @function updateProduct
+ * @function actualizarProducto
  * @param {number|string} id - ID del producto a actualizar.
  * @param {Object} datos - Nuevos datos del producto.
  * @returns {Promise<Object|undefined>} El producto actualizado.
  */
-const updateProduct = async (id, { nombre, descripcion, precio, stock, id_categoria, imagen }) => {
+const actualizarProducto = async (id, { nombre, descripcion, precio, stock, id_categoria, imagen }) => {
   const pool = await getConnection();
   const request = pool.request();
 
@@ -180,11 +180,11 @@ const updateProduct = async (id, { nombre, descripcion, precio, stock, id_catego
  * Elimina lógicamente un producto cambiando su id_estado_prod a 2.
  *
  * @async
- * @function deleteProduct
+ * @function eliminarProducto
  * @param {number|string} id - ID del producto a eliminar.
  * @returns {Promise<boolean>}
  */
-const deleteProduct = async (id) => {
+const eliminarProducto = async (id) => {
   const pool = await getConnection();
   const result = await pool.request()
     .input('id', sql.Int, parseInt(id))
@@ -196,11 +196,11 @@ const deleteProduct = async (id) => {
  * Restaura un producto eliminado lógicamente cambiando su id_estado_prod a 1.
  *
  * @async
- * @function restoreProduct
+ * @function restaurarProducto
  * @param {number|string} id - ID del producto a restaurar.
  * @returns {Promise<boolean>}
  */
-const restoreProduct = async (id) => {
+const restaurarProducto = async (id) => {
   const pool = await getConnection();
   const result = await pool.request()
     .input('id', sql.Int, parseInt(id))
@@ -209,11 +209,11 @@ const restoreProduct = async (id) => {
 };
 
 module.exports = { 
-  getProducts,
-  getDeletedProducts,
-  getProductById,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-  restoreProduct
+  obtenerProductos,
+  obtenerProductosEliminados,
+  obtenerProductoPorId,
+  crearProducto,
+  actualizarProducto,
+  eliminarProducto,
+  restaurarProducto
 };

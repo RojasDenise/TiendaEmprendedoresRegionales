@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const {
-    getSolicitudes,
-    getEmprendedoresActivos,
+    obtenerSolicitudes,
+    obtenerEmprendedoresActivos,
     aprobarEmprendedor,
     rechazarEmprendedor
 } = require('../controllers/usuarioController');
@@ -16,10 +16,10 @@ const {
  */
 
 /** GET /api/usuarios/solicitudes — Emprendedores pendientes de aprobación */
-router.get('/solicitudes', getSolicitudes);
+router.get('/solicitudes', obtenerSolicitudes);
 
 /** GET /api/usuarios/emprendedores — Emprendedores activos */
-router.get('/emprendedores', getEmprendedoresActivos);
+router.get('/emprendedores', obtenerEmprendedoresActivos);
 
 /** PATCH /api/usuarios/:id/aprobar — Aprobar un emprendedor */
 router.patch('/:id/aprobar', aprobarEmprendedor);
