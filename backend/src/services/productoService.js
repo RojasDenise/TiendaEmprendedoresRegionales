@@ -1,67 +1,21 @@
 const sql = require('mssql');
 const { getConnection } = require('../config/db');
 
-// ====================================================================
-// PATRÓN OBSERVER - ObserverStock
-// ====================================================================
+const StockObservable = require("../observers/StockObservable");
+const EmprendedorObserver = require("../observers/EmprendedorObserver");
 
-// Lista de observadores registrados (Clientes y Emprendedores)
-const observadores = [];
+const stockObservable = new StockObservable();
+stockObservable.agregarObservador(new EmprendedorObserver());
 
-/**
- * Agrega un observador a la lista.
- * @param {Object} obs - Debe tener un método actualizar(producto, mensaje)
- */
-const agregarObservador = (obs) => {
-  observadores.push(obs);
-};
-
-/**
- * Elimina un observador de la lista.
- */
-const eliminarObservador = (obs) => {
-  const index = observadores.indexOf(obs);
-  if (index > -1) observadores.splice(index, 1);
-};
-
-/**
- * Notifica a todos los observadores registrados.
- */
-const notificarObservadores = (producto, mensaje) => {
-  observadores.forEach(obs => obs.actualizar(producto, mensaje));
-};
-
-/**
- * Verifica si el stock bajó del mínimo y notifica si es necesario.
- */
 const verificarStock = (producto) => {
-  const STOCK_MINIMO = 5; // podés moverlo a .env si querés
-  if (producto.stock <= STOCK_MINIMO) {
-    const mensaje = `⚠️ Stock bajo: el producto "${producto.nombre}" tiene solo ${producto.stock} unidades disponibles.`;
-    notificarObservadores(producto, mensaje);
+  const STOCK_MINIMO = 5;
+
+  if (producto && producto.stock <= STOCK_MINIMO) {
+    const mensaje = `Stock bajo: el producto "${producto.nombre}" tiene solo ${producto.stock} unidades disponibles.`;
+
+    stockObservable.notificarObservadores(producto, mensaje);
   }
 };
-
-// Observador Emprendedor: imprime en consola (simulación de alerta interna)
-const observadorEmprendedor = {
-  actualizar: (producto, mensaje) => {
-    console.log(`[ALERTA EMPRENDEDOR] ${mensaje}`);
-    // Aquí podrías enviar un email, push notification, etc.
-  }
-};
-
-// Observador Cliente: imprime en consola (simulación de notificación)
-const observadorCliente = {
-  actualizar: (producto, mensaje) => {
-    console.log(`[NOTIFICACIÓN CLIENTE] ${mensaje}`);
-    // Aquí podrías guardar en una tabla Notificaciones, enviar email, etc.
-  }
-};
-
-// Registrar observadores al iniciar el módulo
-agregarObservador(observadorEmprendedor);
-agregarObservador(observadorCliente);
-
 // ====================================================================
 // SERVICIOS DE PRODUCTO
 // ====================================================================
@@ -222,8 +176,5 @@ module.exports = {
   crearProducto,
   actualizarProducto,
   eliminarProducto,
-  restaurarProducto,
-  // Exportar para uso externo si se necesita registrar observadores dinámicamente
-  agregarObservador,
-  eliminarObservador
+  restaurarProducto
 };
