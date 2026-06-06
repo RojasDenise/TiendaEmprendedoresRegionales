@@ -14,18 +14,33 @@ const verificarStock = (producto) => {
     const mensaje = `Stock bajo: el producto "${producto.nombre}" tiene solo ${producto.stock} unidades disponibles.`;
 
     stockObservable.notificarObservadores(producto, mensaje);
+
+    return {
+      stockBajo: true,
+      mensaje
+    };
   }
+
+  return {
+    stockBajo: false,
+    mensaje: null
+  };
 };
 // ====================================================================
 // SERVICIOS DE PRODUCTO
 // ====================================================================
 
-const obtenerProductos = async (id_usuario) => {
+const obtenerProductos = async (id_usuario = null) => {
   const pool = await getConnection();
+  const request = pool.request();
 
-  const result = await pool.request()
-    .input('id_usuario', sql.Int, parseInt(id_usuario))
-    .execute('sp_obtenerProductos');
+  request.input(
+    'id_usuario',
+    sql.Int,
+    id_usuario ? parseInt(id_usuario) : null
+  );
+
+  const result = await request.execute('sp_obtenerProductos');
 
   return result.recordset;
 };
@@ -92,10 +107,12 @@ const crearProducto = async ({ nombre, descripcion, precio, stock, id_categoria,
 
   const producto = result.recordset[0];
 
-  // Observer: verificar stock al crear
-  verificarStock(producto);
+const alertaStock = verificarStock(producto);
 
-  return producto;
+return {
+  producto,
+  alertaStock
+};
 };
 
 const actualizarProducto = async (
@@ -115,14 +132,15 @@ const actualizarProducto = async (
     .input('imagen', sql.VarChar(sql.MAX), imagen || null)
     .execute('sp_actualizarProducto');
 
-  const producto = result.recordset[0];
+const producto = result.recordset[0];
 
-  // Observer
-  verificarStock(producto);
+const alertaStock = verificarStock(producto);
 
-  return producto;
+return {
+  producto,
+  alertaStock
 };
-
+};
 const eliminarProducto = async (id) => {
   const pool = await getConnection();
   const result = await pool.request()

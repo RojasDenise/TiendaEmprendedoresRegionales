@@ -45,6 +45,10 @@ CREATE TABLE Rol (
   CONSTRAINT UQ_Rol_Descripcion UNIQUE (descripcion)
 );
 
+
+INSERT INTO Rol (descripcion)
+VALUES ('Administrador'), ('Emprendedor');
+
 CREATE TABLE Estado (
   id_estado INT IDENTITY(1,1) NOT NULL,
   descripcion VARCHAR(50) NOT NULL,
@@ -53,6 +57,9 @@ CREATE TABLE Estado (
   CONSTRAINT CK_Estado CHECK (descripcion IN ('Activo', 'Inactivo'))
 );
 
+INSERT INTO Estado (descripcion)
+VALUES ('Activo'), ('Inactivo');
+
 CREATE TABLE FormaPago (
   id_formaPago INT IDENTITY(1,1) NOT NULL,
   descripcion VARCHAR(50) NOT NULL,
@@ -60,11 +67,25 @@ CREATE TABLE FormaPago (
   CONSTRAINT UQ_FormaPago_Descripcion UNIQUE (descripcion)
 );
 
+INSERT INTO FormaPago (descripcion)
+VALUES
+('Efectivo'),
+('Transferencia'),
+('Tarjeta'); 
+
 CREATE TABLE Categoria (
   id_categoria INT IDENTITY(1,1) NOT NULL,
   descripcion VARCHAR(200) NOT NULL,
   CONSTRAINT PK_Categoria PRIMARY KEY (id_categoria)
 );
+
+INSERT INTO Categoria (descripcion)
+VALUES
+('Artesanías'),
+('Accesorios'),
+('Gastronomía'),
+('Textiles'),
+('Decoración');
 
 CREATE TABLE EstadoPago (
   id_estadoPago INT IDENTITY(1,1) NOT NULL,
@@ -74,6 +95,13 @@ CREATE TABLE EstadoPago (
   CONSTRAINT CK_EstadoPago CHECK (descripcion IN ('Pendiente', 'Aprobado', 'Rechazado', 'Reembolsado'))
 );
 
+INSERT INTO EstadoPago (descripcion)
+VALUES
+('Pendiente'),
+('Aprobado'),
+('Rechazado'),
+('Reembolsado');
+
 CREATE TABLE estado_envio (
   id_estado_envio INT IDENTITY(1,1) NOT NULL,
   descripcion VARCHAR(50) NOT NULL,
@@ -81,6 +109,13 @@ CREATE TABLE estado_envio (
   CONSTRAINT UQ_EstadoEnvio_Descripcion UNIQUE (descripcion),
   CONSTRAINT CK_EstadoEnvio CHECK (descripcion IN ('En Preparacion', 'En Camino', 'Entregado', 'Cancelado'))
 );
+
+INSERT INTO estado_envio (descripcion)
+VALUES
+('En Preparacion'),
+('En Camino'),
+('Entregado'),
+('Cancelado');
 
 CREATE TABLE Estado_Reclamo (
   id_estadoReclamo INT IDENTITY(1,1) NOT NULL,
@@ -90,6 +125,11 @@ CREATE TABLE Estado_Reclamo (
   CONSTRAINT CK_EstadoReclamo CHECK (descripcion IN ('Pendiente', 'Resuelto'))
 );
 
+INSERT INTO Estado_Reclamo (descripcion)
+VALUES
+('Pendiente'),
+('Resuelto');
+
 CREATE TABLE Estado_Producto (
   id_estado_prod INT IDENTITY(1,1) NOT NULL,
   descripcion VARCHAR(50) NOT NULL,
@@ -98,6 +138,13 @@ CREATE TABLE Estado_Producto (
   CONSTRAINT CK_EstadoProducto CHECK (descripcion IN ('Con Stock', 'Sin Stock', 'Descontinuado'))
 );
 
+INSERT INTO Estado_Producto (descripcion)
+VALUES
+('Con Stock'),
+('Sin Stock'),
+('Descontinuado');
+
+
 CREATE TABLE Estado_pedido (
   id_estadoPedido INT IDENTITY(1,1) NOT NULL,
   descripcion VARCHAR(50) NOT NULL,
@@ -105,6 +152,12 @@ CREATE TABLE Estado_pedido (
   CONSTRAINT UQ_EstadoPedido_Descripcion UNIQUE (descripcion),
   CONSTRAINT CK_EstadoPedido CHECK (descripcion IN ('Pendiente de Pago', 'Pagado', 'Cancelado'))
 );
+
+INSERT INTO Estado_pedido (descripcion)
+VALUES
+('Pendiente de Pago'),
+('Pagado'),
+('Cancelado');
 
 CREATE TABLE Provincia (
   id_provincia INT IDENTITY(1,1) NOT NULL,
@@ -200,6 +253,7 @@ ADD id_usuario INT NOT NULL;
 ALTER TABLE Producto 
 ADD CONSTRAINT FK_Producto_Usuario 
 FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario);
+
 
 CREATE TABLE Carrito (
   id_carrito INT IDENTITY(1,1) NOT NULL,
@@ -322,15 +376,27 @@ CREATE TABLE Valoración (
 
 
 --Procedimientos almacenados 
---Consulta
-CREATE PROCEDURE sp_obtenerProductos
+
+CREATE OR ALTER PROCEDURE sp_obtenerProductos
     @id_usuario INT
 AS
 BEGIN
-    SELECT *
-    FROM Producto
-    WHERE id_usuario = @id_usuario
-      AND id_estado_prod = 1;
+    SELECT
+        p.*,
+        c.descripcion AS categoria_nombre,
+        ep.descripcion AS estado_nombre,
+        u.apellidoNombre AS nombre_usuario,
+        u.nombreEmprendimiento
+    FROM Producto p
+    INNER JOIN Categoria c
+        ON p.id_categoria = c.id_categoria
+    INNER JOIN Estado_Producto ep
+        ON p.id_estado_prod = ep.id_estado_prod
+    LEFT JOIN Usuario u
+        ON p.id_usuario = u.id_usuario
+    WHERE p.id_usuario = @id_usuario
+      AND p.id_estado_prod = 1
+    ORDER BY p.id_producto DESC;
 END;
 GO
 
