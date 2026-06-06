@@ -3,7 +3,7 @@ const router = express.Router();
 const productoController = require('../controllers/productoController');
 const multer = require('multer');
 const path = require('path');
-
+const fs = require('fs');
 /**
  * @fileoverview Rutas para la gestión de productos.
  * Define los endpoints CRUD de productos, incluyendo soporte para
@@ -20,9 +20,15 @@ const path = require('path');
  *
  * @type {multer.StorageEngine}
  */
+const uploadDir = path.join(__dirname, '../../public/uploads');
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'public/uploads/');
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname));
