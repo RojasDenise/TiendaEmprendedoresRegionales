@@ -83,7 +83,7 @@ const crearProducto = async ({ nombre, descripcion, precio, stock, id_categoria,
     .input('id_categoria', sql.Int, id_categoria)
     .input('id_usuario', sql.Int, id_usuario)
     .input('estado', sql.Int, 1)
-    .input('imagen', sql.VarChar(255), imagen)
+    .input('imagen', sql.VarChar(sql.MAX), imagen)
     .query(`
       INSERT INTO Producto (nombre, descripcion, precio, stock, id_categoria, id_usuario, id_estado_prod, imagen)
       OUTPUT INSERTED.*
@@ -108,11 +108,11 @@ const actualizarProducto = async (
   const result = await pool.request()
     .input('id_producto', sql.Int, parseInt(id))
     .input('nombre', sql.VarChar(50), nombre)
-    .input('descripcion', sql.VarChar(200), descripcion)
+    .input('descripcion', sql.VarChar(sql.MAX), descripcion)
     .input('precio', sql.Decimal(10, 2), parseFloat(precio))
     .input('stock', sql.Int, parseInt(stock))
     .input('id_categoria', sql.Int, parseInt(id_categoria))
-    .input('imagen', sql.VarChar(255), imagen || null)
+    .input('imagen', sql.VarChar(sql.MAX), imagen || null)
     .execute('sp_actualizarProducto');
 
   const producto = result.recordset[0];
