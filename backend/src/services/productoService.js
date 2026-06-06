@@ -30,12 +30,17 @@ const verificarStock = (producto) => {
 // SERVICIOS DE PRODUCTO
 // ====================================================================
 
-const obtenerProductos = async (id_usuario) => {
+const obtenerProductos = async (id_usuario = null) => {
   const pool = await getConnection();
+  const request = pool.request();
 
-  const result = await pool.request()
-    .input('id_usuario', sql.Int, parseInt(id_usuario))
-    .execute('sp_obtenerProductos');
+  request.input(
+    'id_usuario',
+    sql.Int,
+    id_usuario ? parseInt(id_usuario) : null
+  );
+
+  const result = await request.execute('sp_obtenerProductos');
 
   return result.recordset;
 };
