@@ -321,7 +321,47 @@ CREATE TABLE Valoración (
 );
 
 
---Revisar,  falta procedimientos almacenados y el proc de encriptar desencriptar contraseñas
+--Procedimientos almacenados 
+--Consulta
+CREATE PROCEDURE sp_obtenerProductos
+    @id_usuario INT
+AS
+BEGIN
+    SELECT *
+    FROM Producto
+    WHERE id_usuario = @id_usuario
+      AND id_estado_prod = 1;
+END;
+GO
+
+--Actualización
+CREATE OR ALTER PROCEDURE sp_actualizarProducto
+    @id_producto INT,
+    @nombre VARCHAR(50),
+    @descripcion VARCHAR(MAX),
+    @precio DECIMAL(10,2),
+    @stock INT,
+    @id_categoria INT,
+    @imagen VARCHAR(MAX) = NULL
+AS
+BEGIN
+    UPDATE Producto
+    SET nombre = @nombre,
+        descripcion = @descripcion,
+        precio = @precio,
+        stock = @stock,
+        id_categoria = @id_categoria,
+        imagen = ISNULL(@imagen, imagen)
+    WHERE id_producto = @id_producto;
+
+    SELECT *
+    FROM Producto
+    WHERE id_producto = @id_producto;
+END;
+GO
+--Verifacamos que se creo el procedimiento
+
+EXEC sp_helptext 'sp_actualizarProducto';
 -- =============================================
 -- 5. Implementación de un trigger luego de que se ejecute pago, en el descuento de stock del producto
 -- =============================================
@@ -348,4 +388,57 @@ BEGIN
         WHERE stock = 0;
     END
 END;
+GO
+
+--Modificacion de reclamo
+-- 1. Agregar id_reclamo a Mensaje_Reclamo
+ALTER TABLE Mensaje_Reclamo
+ADD id_reclamo INT NULL;
+GO
+
+-- 2. Migrar mensajes existentes usando la relación vieja Reclamo.id_mensaje
+UPDATE mr
+SET mr.id_reclamo = r.id_reclamo
+FROM Mensaje_Reclamo mr
+INNER JOIN Reclamo r ON r.id_mensaje = mr.id_mensaje;
+GO
+
+-- 3. Eliminar mensajes sin reclamo asociado
+DELETE FROM Mensaje_Reclamo
+WHERE id_reclamo IS NULL;
+GO
+
+-- 4. Cambiar id_reclamo a NOT NULL
+ALTER TABLE Mensaje_Reclamo
+ALTER COLUMN id_reclamo INT NOT NULL;
+GO
+
+-- 5. Crear FK nueva: Mensaje_Reclamo -> Reclamo
+ALTER TABLE Mensaje_Reclamo
+ADD CONSTRAINT FK_MensajeReclamo_Reclamo
+FOREIGN KEY (id_reclamo) REFERENCES Reclamo(id_reclamo);
+GO
+
+-- 6. Agregar id_usuario para saber quién escribió el mensaje
+ALTER TABLE Mensaje_Reclamo
+ADD id_usuario INT NULL;
+GO
+
+-- 7. Eliminar la FK vieja Reclamo -> Mensaje_Reclamo
+ALTER TABLE Reclamo
+DROP CONSTRAINT FK_Reclamo_Mensaje;
+GO
+
+-- 8. Eliminar la columna vieja id_mensaje de Reclamo
+ALTER TABLE Reclamo
+DROP COLUMN id_mensaje;
+GO
+
+--modificacion longitud atributos descrip e imagen tabla producto
+ALTER TABLE Producto
+ALTER COLUMN descripcion VARCHAR(MAX) NOT NULL;
+GO
+
+ALTER TABLE Producto
+ALTER COLUMN imagen VARCHAR(MAX) NOT NULL;
 GO
