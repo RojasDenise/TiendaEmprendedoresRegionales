@@ -1,21 +1,14 @@
-const express = require("express");
-const router = express.Router();
-const reclamoController = require("../controllers/reclamoController");
+const express = require('express');
+const router  = express.Router();
+const reclamoController = require('../controllers/reclamoController');
 
-// Listar reclamos del emprendedor
-// GET /api/reclamos?id_usuario=X
-router.get("/", reclamoController.listarReclamos);
-
-// Ver detalle de un reclamo
-// GET /api/reclamos/:id_reclamo
-router.get("/:id_reclamo", reclamoController.obtenerDetalle);
-
-// Responder un reclamo (crea MensajeReclamo + cambia estado a Respondido)
-// POST /api/reclamos/:id_reclamo/responder
-router.post("/:id_reclamo/responder", reclamoController.responderReclamo);
-
-// Marcar como Resuelto
-// PATCH /api/reclamos/:id_reclamo/resolver
-router.patch("/:id_reclamo/resolver", reclamoController.resolverReclamo);
+router.get('/',                              reclamoController.listarReclamos);
+router.get('/cliente/:id_cliente',           reclamoController.obtenerReclamosCliente);
+router.get('/:id_reclamo',                   reclamoController.obtenerDetalle);
+router.get('/:id_reclamo/mensajes',          reclamoController.obtenerMensajes);
+router.post('/',                             reclamoController.crearReclamo);
+router.post('/:id_reclamo/responder',        reclamoController.responderReclamo);
+router.post('/:id_reclamo/responder-cliente', reclamoController.responderCliente);
+router.patch('/:id_reclamo/resolver',        reclamoController.resolverReclamo);
 
 module.exports = router;

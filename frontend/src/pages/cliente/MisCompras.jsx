@@ -1,30 +1,25 @@
-import { useEffect, useState } from 'react';
-import { obtenerFacturas, agregarValoracion, agregarReclamo } from '../../services/clienteService';
-
-/**
- * @fileoverview Mis compras del cliente.
- * Lista todas las facturas con items, estado de envio y acciones:
- * - Valorar producto (si envio = Entregado y aún no valoró)
- * - Realizar reclamo (si envio = Entregado)
- *
- * @module MisCompras
- * @author Rojas Karen Denise; Sandoval María Victoria
- */
+import { useEffect, useState, useRef } from 'react';
+import {
+  obtenerFacturas, agregarValoracion, agregarReclamo,
+  obtenerMensajesReclamo, responderReclamo
+} from '../../services/clienteService';
 
 const IMG_URL = 'http://localhost:5000/uploads/';
+const BASE_URL = 'http://localhost:5000/api';
 
-function Estrellas({ valor, onChange, size = 20 }) {
+// ─── Estrellas ────────────────────────────────────────────────────────────────
+function Estrellas({ valor, onChange, size = 22, readonly = false }) {
   const [hover, setHover] = useState(0);
   return (
-    <div style={{ display: 'flex', gap: 3 }}>
+    <div style={{ display: 'flex', gap: 4 }}>
       {[1, 2, 3, 4, 5].map(n => (
         <svg key={n} width={size} height={size} viewBox="0 0 24 24"
           fill={n <= (hover || valor) ? '#F59E0B' : 'none'}
           stroke="#F59E0B" strokeWidth="1.5"
-          style={{ cursor: 'pointer' }}
-          onMouseEnter={() => setHover(n)}
-          onMouseLeave={() => setHover(0)}
-          onClick={() => onChange(n)}>
+          style={{ cursor: readonly ? 'default' : 'pointer', transition: 'fill 0.1s' }}
+          onMouseEnter={() => !readonly && setHover(n)}
+          onMouseLeave={() => !readonly && setHover(0)}
+          onClick={() => !readonly && onChange && onChange(n)}>
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
         </svg>
       ))}
@@ -32,7 +27,7 @@ function Estrellas({ valor, onChange, size = 20 }) {
   );
 }
 
-// Modal genérico para valorar o reclamar un ítem
+// ─── Modal Valoración ─────────────────────────────────────────────────────────
 function ModalValoracion({ factura, item, onClose, id_cliente, onExito }) {
   const [puntaje,    setPuntaje]    = useState(0);
   const [comentario, setComentario] = useState('');
@@ -41,43 +36,44 @@ function ModalValoracion({ factura, item, onClose, id_cliente, onExito }) {
 
   const handleEnviar = async () => {
     if (puntaje === 0) return setError('Seleccioná una puntuación');
-    setEnviando(true);
+    setEnviando(true); setError('');
     try {
-      await agregarValoracion({
-        id_factura:  factura.id_factura,
-        id_producto: item.id_producto,
-        id_cliente,
-        puntaje,
-        comentario,
-      });
+      await agregarValoracion({ id_factura: factura.id_factura, id_producto: item.id_producto, id_cliente, puntaje, comentario });
       onExito('¡Valoración registrada con éxito!');
       onClose();
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setEnviando(false);
-    }
+    } catch (e) { setError(e.message); }
+    finally { setEnviando(false); }
   };
 
   return (
-    <div style={m.overlay}>
+    <div style={m.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={m.modal}>
         <div style={m.header}>
           <h3 style={m.titulo}>Valorar producto</h3>
           <button onClick={onClose} style={m.btnX}>✕</button>
         </div>
-        <p style={m.sub}>{item.producto_nombre}</p>
-
-        {error && <div style={m.err}>{error}</div>}
-
-        <div style={{ marginBottom: 12 }}>
-          <div style={m.label}>Puntuación</div>
-          <Estrellas valor={puntaje} onChange={setPuntaje} />
+        <div style={m.itemPreview}>
+          {item.producto_imagen && (
+            <div style={m.itemThumb}>
+              <img src={`${IMG_URL}${item.producto_imagen}`} alt={item.producto_nombre}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={e => { e.target.style.display = 'none'; }} />
+            </div>
+          )}
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#111' }}>{item.producto_nombre}</div>
+            <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{item.categoria}</div>
+          </div>
         </div>
+        {error && <div style={m.err}>{error}</div>}
         <div style={{ marginBottom: 16 }}>
-          <div style={m.label}>Comentario <span style={{ color: '#aaa', fontWeight: 400 }}>(opcional)</span></div>
-          <textarea rows={3} style={m.textarea}
-            placeholder="Contá tu experiencia..."
+          <div style={m.label}>Puntuación</div>
+          <Estrellas valor={puntaje} onChange={setPuntaje} size={26} />
+          {puntaje > 0 && <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>{['','Muy malo','Malo','Regular','Bueno','Excelente'][puntaje]}</div>}
+        </div>
+        <div style={{ marginBottom: 20 }}>
+          <div style={m.label}>Comentario <span style={{ color: '#bbb', fontWeight: 400 }}>(opcional)</span></div>
+          <textarea rows={3} style={m.textarea} placeholder="Contá tu experiencia con el producto..."
             value={comentario} onChange={e => setComentario(e.target.value)} />
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -91,6 +87,13 @@ function ModalValoracion({ factura, item, onClose, id_cliente, onExito }) {
   );
 }
 
+// ─── Modal Reclamo (formulario inicial) ───────────────────────────────────────
+const MOTIVOS = [
+  'Producto defectuoso o dañado','No llegó lo pedido',
+  'Producto diferente al anunciado','Demora en la entrega',
+  'Problema con el pago','Otro',
+];
+
 function ModalReclamo({ factura, onClose, id_cliente, onExito }) {
   const [motivo,      setMotivo]      = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -98,44 +101,47 @@ function ModalReclamo({ factura, onClose, id_cliente, onExito }) {
   const [error,       setError]       = useState('');
 
   const handleEnviar = async () => {
-    if (!motivo.trim() || !descripcion.trim()) return setError('Complete todos los campos');
-    setEnviando(true);
+    if (!motivo.trim())      return setError('Seleccioná un motivo');
+    if (!descripcion.trim()) return setError('Describí el problema');
+    setEnviando(true); setError('');
     try {
       await agregarReclamo({ id_factura: factura.id_factura, id_cliente, motivo, descripcion });
-      onExito('¡Reclamo registrado con éxito!');
+      onExito('¡Reclamo registrado! Te contactaremos pronto.');
       onClose();
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setEnviando(false);
-    }
+    } catch (e) { setError(e.message); }
+    finally { setEnviando(false); }
   };
 
   return (
-    <div style={m.overlay}>
+    <div style={m.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={m.modal}>
         <div style={m.header}>
           <h3 style={m.titulo}>Realizar reclamo</h3>
           <button onClick={onClose} style={m.btnX}>✕</button>
         </div>
-        <p style={m.sub}>Factura #{factura.id_factura}</p>
-
+        <p style={m.sub}>Factura #{factura.id_factura} · ${Number(factura.total).toLocaleString('es-AR')}</p>
         {error && <div style={m.err}>{error}</div>}
-
-        <div style={{ marginBottom: 12 }}>
-          <div style={m.label}>Motivo</div>
-          <input style={m.input} placeholder="Ej: Producto dañado, no llegó lo pedido..."
-            value={motivo} onChange={e => setMotivo(e.target.value)} />
+        <div style={{ marginBottom: 14 }}>
+          <div style={m.label}>Motivo del reclamo</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {MOTIVOS.map(op => (
+              <label key={op} style={{ ...m.radio, ...(motivo === op ? m.radioSelected : {}) }}>
+                <input type="radio" name="motivo" value={op} checked={motivo === op}
+                  onChange={() => setMotivo(op)} style={{ display: 'none' }} />
+                <span style={m.radioCircle}>{motivo === op && <span style={m.radioInner} />}</span>
+                {op}
+              </label>
+            ))}
+          </div>
         </div>
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 20 }}>
           <div style={m.label}>Descripción del problema</div>
-          <textarea rows={4} style={m.textarea}
-            placeholder="Describí con detalle el problema..."
+          <textarea rows={4} style={m.textarea} placeholder="Describí con detalle qué ocurrió..."
             value={descripcion} onChange={e => setDescripcion(e.target.value)} />
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           <button onClick={onClose} style={m.btnSec}>Cancelar</button>
-          <button onClick={handleEnviar} disabled={enviando} style={m.btnPrimary}>
+          <button onClick={handleEnviar} disabled={enviando} style={{ ...m.btnPrimary, background: '#DC2626' }}>
             {enviando ? 'Enviando...' : 'Enviar reclamo'}
           </button>
         </div>
@@ -144,88 +150,233 @@ function ModalReclamo({ factura, onClose, id_cliente, onExito }) {
   );
 }
 
-export default function MisCompras() {
-  const user = JSON.parse(sessionStorage.getItem('user') || 'null');
-  const [facturas,  setFacturas]  = useState([]);
-  const [cargando,  setCargando]  = useState(true);
-  const [toastMsg,  setToastMsg]  = useState('');
+// ─── Modal Chat Reclamo ───────────────────────────────────────────────────────
+function ModalChat({ reclamo, onClose, id_cliente }) {
+  const [mensajes,  setMensajes]  = useState([]);
+  const [texto,     setTexto]     = useState('');
+  const [enviando,  setEnviando]  = useState(false);
+  const [error,     setError]     = useState('');
+  const bottomRef = useRef(null);
 
-  // Modales
-  const [modalValoracion, setModalValoracion] = useState(null); // { factura, item }
-  const [modalReclamo,    setModalReclamo]    = useState(null); // { factura }
+  const cargarMensajes = async () => {
+    try {
+      const data = await obtenerMensajesReclamo(reclamo.id_reclamo);
+      setMensajes(data);
+    } catch (e) { setError('Error al cargar mensajes'); }
+  };
+
+  useEffect(() => { cargarMensajes(); }, []);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [mensajes]);
+
+  const handleEnviar = async () => {
+    if (!texto.trim()) return;
+    setEnviando(true); setError('');
+    try {
+      await responderReclamo(reclamo.id_reclamo, id_cliente, texto.trim());
+      setTexto('');
+      cargarMensajes();
+    } catch (e) { setError(e.message); }
+    finally { setEnviando(false); }
+  };
+
+  const resuelto = reclamo.estado_reclamo_desc === 'Resuelto';
+
+  return (
+    <div style={m.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ ...m.modal, maxWidth: 520, display: 'flex', flexDirection: 'column', height: '75vh' }}>
+
+        {/* Header */}
+        <div style={m.header}>
+          <div>
+            <h3 style={m.titulo}>Conversación del reclamo</h3>
+            <p style={{ fontSize: 12, color: '#aaa', margin: 0 }}>
+              Reclamo #{reclamo.id_reclamo} · {reclamo.motivo}
+            </p>
+          </div>
+          <button onClick={onClose} style={m.btnX}>✕</button>
+        </div>
+
+        {/* Hilo de mensajes */}
+        <div style={m.chatBody}>
+          {mensajes.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#bbb', fontSize: 13, padding: '2rem' }}>
+              Sin mensajes todavía
+            </div>
+          ) : (
+            mensajes.map(msg => {
+              const esCliente = msg.emisor === 'cliente';
+              return (
+                <div key={msg.id_mensaje} style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: esCliente ? 'flex-end' : 'flex-start',
+                  marginBottom: 12,
+                }}>
+                  <div style={{ fontSize: 10.5, color: '#bbb', marginBottom: 3 }}>
+                    {esCliente ? 'Vos' : 'Emprendedor'}
+                  </div>
+                  <div style={{
+                    maxWidth: '78%',
+                    padding: '9px 13px',
+                    borderRadius: esCliente ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                    background: esCliente ? '#111' : '#F3F4F6',
+                    color: esCliente ? '#fff' : '#111',
+                    fontSize: 13.5,
+                    lineHeight: 1.5,
+                  }}>
+                    {msg.contenido}
+                  </div>
+                  <div style={{ fontSize: 10.5, color: '#ccc', marginTop: 3 }}>
+                    {new Date(msg.fecha).toLocaleString('es-AR', {
+                      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                    })}
+                  </div>
+                </div>
+              );
+            })
+          )}
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Input */}
+        {error && <div style={{ ...m.err, margin: '0 0 8px' }}>{error}</div>}
+
+        {resuelto ? (
+          <div style={m.chatResuelto}>
+            ✓ Este reclamo fue resuelto. No se pueden enviar más mensajes.
+          </div>
+        ) : (
+          <div style={m.chatInputWrap}>
+            <textarea
+              rows={2}
+              style={m.chatInput}
+              placeholder="Escribí tu mensaje..."
+              value={texto}
+              onChange={e => setTexto(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleEnviar(); } }}
+            />
+            <button onClick={handleEnviar} disabled={enviando || !texto.trim()} style={m.chatSendBtn}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Componente principal ─────────────────────────────────────────────────────
+export default function MisCompras() {
+  const user       = JSON.parse(sessionStorage.getItem('user') || 'null');
+  const id_cliente = user?.id_usuario;
+
+  const [facturas,        setFacturas]        = useState([]);
+  const [cargando,        setCargando]        = useState(true);
+  const [toastMsg,        setToastMsg]        = useState('');
+  const [toastOk,         setToastOk]         = useState(true);
+  const [modalValoracion, setModalValoracion] = useState(null);
+  const [modalReclamo,    setModalReclamo]    = useState(null);
+  const [modalChat,       setModalChat]       = useState(null);
 
   const cargar = async () => {
+    if (!id_cliente) return;
+    setCargando(true);
     try {
-      const data = await obtenerFacturas(user.id_usuario);
+      const data = await obtenerFacturas(id_cliente);
       setFacturas(data);
     } catch (e) {
-      console.error(e);
-    } finally {
-      setCargando(false);
-    }
+      mostrarToast('Error al cargar compras', false);
+    } finally { setCargando(false); }
   };
 
   useEffect(() => { cargar(); }, []);
 
-  const mostrarToast = (msg) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(''), 4000);
+  const mostrarToast = (msg, ok = true) => {
+    setToastMsg(msg); setToastOk(ok);
+    setTimeout(() => setToastMsg(''), 4500);
   };
 
-  const estadoBadge = (estado) => {
-    const estilos = {
-      'Entregado':  { background: '#DCFCE7', color: '#166534' },
-      'En proceso': { background: '#FEF9C3', color: '#854D0E' },
-      'Sin envio':  { background: '#F1F5F9', color: '#64748B' },
-    };
-    return estilos[estado] || { background: '#F1F5F9', color: '#64748B' };
+  const estadoBadgeStyle = (estado) => ({
+    'Entregado':      { background: '#DCFCE7', color: '#166534' },
+    'En Camino':      { background: '#DBEAFE', color: '#1E40AF' },
+    'En Preparacion': { background: '#FEF9C3', color: '#854D0E' },
+    'Cancelado':      { background: '#FEE2E2', color: '#991B1B' },
+  }[estado] || { background: '#F1F5F9', color: '#64748B' });
+
+  const abrirChat = async (f) => {
+    // Buscar el id_reclamo y estado desde la API
+    try {
+      const res = await fetch(`${BASE_URL}/reclamos/cliente/${id_cliente}`);
+      const reclamos = await res.json();
+      const reclamo = reclamos.find(r => r.id_factura === f.id_factura);
+      if (reclamo) setModalChat({ ...reclamo, motivo: reclamo.motivo });
+    } catch (e) { mostrarToast('Error al abrir la conversación', false); }
   };
 
-  if (cargando) return <div style={s.empty}>Cargando tus compras...</div>;
+  if (cargando) {
+    return (
+      <div style={s.loadingWrap}>
+        <div style={s.spinner} />
+        <p style={{ color: '#bbb', fontSize: 14, marginTop: 12 }}>Cargando tus compras...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      {/* Toast */}
+
       {toastMsg && (
-        <div style={s.toast}>{toastMsg}</div>
+        <div style={{ ...s.toast, background: toastOk ? '#111' : '#DC2626' }}>
+          {toastOk ? '✓' : '✕'} {toastMsg}
+        </div>
       )}
 
       <div style={s.topbar}>
         <h1 style={s.titulo}>Mis compras</h1>
-        <p style={s.subtitulo}>{facturas.length} {facturas.length === 1 ? 'compra' : 'compras'}</p>
+        <p style={s.subtitulo}>
+          {facturas.length === 0 ? 'Sin compras todavía' : `${facturas.length} ${facturas.length === 1 ? 'compra' : 'compras'}`}
+        </p>
       </div>
 
       {facturas.length === 0 ? (
-        <div style={s.empty}>Todavía no realizaste ninguna compra.</div>
+        <div style={s.emptyState}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ddd" strokeWidth="1.2">
+            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          </svg>
+          <p style={{ color: '#bbb', fontSize: 14, marginTop: 12 }}>Todavía no realizaste ninguna compra.</p>
+        </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {facturas.map(f => (
             <div key={f.id_factura} style={s.card}>
-              {/* Header de la factura */}
+
               <div style={s.cardHeader}>
-                <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={s.facturaId}>Factura #{f.id_factura}</span>
-                  <span style={s.fecha}>{new Date(f.fecha).toLocaleDateString('es-AR')}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ ...s.estadoBadge, ...estadoBadge(f.estado_envio) }}>
-                    {f.estado_envio}
+                  <span style={s.fecha}>
+                    {new Date(f.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ ...s.badge, ...estadoBadgeStyle(f.estado_envio) }}>{f.estado_envio}</span>
                   <span style={s.total}>${Number(f.total).toLocaleString('es-AR')}</span>
                 </div>
               </div>
 
-              {/* Items */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-                {f.items.map(item => (
-                  <div key={item.id_itemCarrito} style={s.item}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+                {(f.items || []).map(item => (
+                  <div key={item.id_detalleFactura} style={s.item}>
                     <div style={s.itemImg}>
                       {item.producto_imagen ? (
                         <img src={`${IMG_URL}${item.producto_imagen}`} alt={item.producto_nombre}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           onError={e => { e.target.style.display = 'none'; }} />
                       ) : (
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.2">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.2">
                           <rect x="3" y="3" width="18" height="18" rx="2"/>
                           <polyline points="21 15 16 10 5 21"/>
                         </svg>
@@ -235,28 +386,36 @@ export default function MisCompras() {
                       <div style={s.itemNombre}>{item.producto_nombre}</div>
                       <div style={s.itemDetalle}>
                         {item.cantidad} × ${Number(item.precio_unitario).toLocaleString('es-AR')}
+                        {item.vendedor && <span style={s.vendedor}> · {item.vendedor}</span>}
                       </div>
                     </div>
-
-                    {/* Botón valorar por item (solo si envio entregado) */}
-                    {f.id_estado_envio === 2 && (
-                      <button
-                        style={s.btnValoracion}
-                        onClick={() => setModalValoracion({ factura: f, item })}>
-                        ★ Valorar
-                      </button>
+                    {f.id_estado_envio === 3 && (
+                      item.ya_valorado ? (
+                        <span style={s.yaValorado}><Estrellas valor={5} readonly size={13} /> Valorado</span>
+                      ) : (
+                        <button style={s.btnValoracion} onClick={() => setModalValoracion({ factura: f, item })}>
+                          ★ Valorar
+                        </button>
+                      )
                     )}
                   </div>
                 ))}
               </div>
 
-              {/* Footer con botón reclamar */}
-              {f.id_estado_envio === 2 && (
+              {f.id_estado_envio === 3 && (
                 <div style={s.cardFooter}>
-                  <button style={s.btnReclamo}
-                    onClick={() => setModalReclamo({ factura: f })}>
-                    Realizar reclamo
-                  </button>
+                  {f.tiene_reclamo ? (
+                    <button style={s.btnVerChat} onClick={() => abrirChat(f)}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      {f.estado_reclamo_desc === 'Resuelto' ? 'Reclamo resuelto · Ver conversación' : 'Reclamo en proceso · Ver conversación'}
+                    </button>
+                  ) : (
+                    <button style={s.btnReclamo} onClick={() => setModalReclamo({ factura: f })}>
+                      Realizar reclamo
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -264,61 +423,73 @@ export default function MisCompras() {
         </div>
       )}
 
-      {/* Modales */}
       {modalValoracion && (
-        <ModalValoracion
-          factura={modalValoracion.factura}
-          item={modalValoracion.item}
-          id_cliente={user.id_usuario}
-          onClose={() => setModalValoracion(null)}
-          onExito={mostrarToast}
-        />
+        <ModalValoracion factura={modalValoracion.factura} item={modalValoracion.item}
+          id_cliente={id_cliente} onClose={() => setModalValoracion(null)}
+          onExito={msg => { mostrarToast(msg); cargar(); }} />
       )}
       {modalReclamo && (
-        <ModalReclamo
-          factura={modalReclamo.factura}
-          id_cliente={user.id_usuario}
+        <ModalReclamo factura={modalReclamo.factura} id_cliente={id_cliente}
           onClose={() => setModalReclamo(null)}
-          onExito={mostrarToast}
-        />
+          onExito={msg => { mostrarToast(msg); cargar(); }} />
+      )}
+      {modalChat && (
+        <ModalChat reclamo={modalChat} id_cliente={id_cliente}
+          onClose={() => setModalChat(null)} />
       )}
     </div>
   );
 }
 
+// ─── Estilos ──────────────────────────────────────────────────────────────────
 const s = {
-  topbar:       { marginBottom: '1.5rem' },
-  titulo:       { fontFamily: "'DM Serif Display', serif", fontSize: 26, fontWeight: 400, color: '#111', margin: '0 0 4px' },
-  subtitulo:    { fontSize: 12.5, color: '#aaa', margin: 0 },
-  empty:        { textAlign: 'center', color: '#aaa', padding: '3rem', fontSize: 14 },
-  toast:        { position: 'fixed', bottom: 24, right: 24, background: '#111', color: '#fff', padding: '0.75rem 1.25rem', borderRadius: 10, fontSize: 13.5, zIndex: 1000, boxShadow: '0 4px 16px rgba(0,0,0,0.18)' },
-  card:         { background: '#fff', border: '0.5px solid #ebebeb', borderRadius: 14, padding: '1.25rem 1.5rem' },
-  cardHeader:   { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 12, borderBottom: '0.5px solid #f0f0f0' },
-  facturaId:    { fontSize: 14, fontWeight: 500, color: '#111', marginRight: 10 },
-  fecha:        { fontSize: 12.5, color: '#aaa' },
-  estadoBadge:  { fontSize: 11.5, fontWeight: 500, padding: '3px 10px', borderRadius: 20 },
-  total:        { fontSize: 15, fontWeight: 500, color: '#111' },
-  item:         { display: 'flex', alignItems: 'center', gap: 12, padding: '6px 0' },
-  itemImg:      { width: 44, height: 44, borderRadius: 8, background: '#F7F6F3', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  itemInfo:     { flex: 1 },
-  itemNombre:   { fontSize: 13.5, fontWeight: 500, color: '#111' },
-  itemDetalle:  { fontSize: 12, color: '#aaa', marginTop: 2 },
-  btnValoracion:{ padding: '4px 10px', background: '#FEF3C7', color: '#92400E', border: '0.5px solid #FDE68A', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' },
-  cardFooter:   { borderTop: '0.5px solid #f0f0f0', paddingTop: 12, display: 'flex', justifyContent: 'flex-end' },
-  btnReclamo:   { padding: '6px 14px', background: '#fff', color: '#555', border: '0.5px solid #ddd', borderRadius: 8, fontSize: 12.5, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" },
+  topbar:           { marginBottom: '1.5rem' },
+  titulo:           { fontFamily: "'DM Serif Display', serif", fontSize: 26, fontWeight: 400, color: '#111', margin: '0 0 4px' },
+  subtitulo:        { fontSize: 12.5, color: '#aaa', margin: 0 },
+  loadingWrap:      { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem' },
+  spinner:          { width: 28, height: 28, border: '2.5px solid #f0f0f0', borderTopColor: '#111', borderRadius: '50%', animation: 'spin 0.7s linear infinite' },
+  emptyState:       { textAlign: 'center', padding: '4rem', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  toast:            { position: 'fixed', bottom: 24, right: 24, color: '#fff', padding: '0.75rem 1.25rem', borderRadius: 10, fontSize: 13.5, zIndex: 1000, boxShadow: '0 4px 16px rgba(0,0,0,0.18)', display: 'flex', alignItems: 'center', gap: 8 },
+  card:             { background: '#fff', border: '0.5px solid #ebebeb', borderRadius: 14, padding: '1.25rem 1.5rem' },
+  cardHeader:       { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 12, borderBottom: '0.5px solid #f0f0f0' },
+  facturaId:        { fontSize: 13.5, fontWeight: 500, color: '#111' },
+  fecha:            { fontSize: 12, color: '#bbb' },
+  badge:            { fontSize: 11.5, fontWeight: 500, padding: '3px 10px', borderRadius: 20 },
+  total:            { fontSize: 15, fontWeight: 600, color: '#111' },
+  item:             { display: 'flex', alignItems: 'center', gap: 12, padding: '5px 0' },
+  itemImg:          { width: 46, height: 46, borderRadius: 9, background: '#F7F6F3', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  itemInfo:         { flex: 1 },
+  itemNombre:       { fontSize: 13.5, fontWeight: 500, color: '#111' },
+  itemDetalle:      { fontSize: 12, color: '#aaa', marginTop: 2 },
+  vendedor:         { color: '#bbb' },
+  btnValoracion:    { padding: '5px 11px', background: '#FFFBEB', color: '#92400E', border: '0.5px solid #FDE68A', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap', flexShrink: 0 },
+  yaValorado:       { display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: '#6B7280', flexShrink: 0 },
+  cardFooter:       { borderTop: '0.5px solid #f0f0f0', paddingTop: 12, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' },
+  btnReclamo:       { padding: '6px 14px', background: '#fff', color: '#555', border: '0.5px solid #ddd', borderRadius: 8, fontSize: 12.5, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" },
+  btnVerChat:       { display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: '#EFF6FF', color: '#1E40AF', border: '0.5px solid #BFDBFE', borderRadius: 8, fontSize: 12.5, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 500 },
 };
 
 const m = {
-  overlay:   { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 },
-  modal:     { background: '#fff', borderRadius: 16, padding: '1.75rem', width: '100%', maxWidth: 440, fontFamily: "'DM Sans', sans-serif" },
-  header:    { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  titulo:    { fontFamily: "'DM Serif Display', serif", fontSize: 19, fontWeight: 400, color: '#111', margin: 0 },
-  btnX:      { background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#aaa', padding: 0 },
-  sub:       { fontSize: 13, color: '#888', margin: '0 0 16px' },
-  label:     { fontSize: 13, fontWeight: 500, color: '#444', marginBottom: 6 },
-  input:     { width: '100%', padding: '0.6rem 0.8rem', border: '0.5px solid #ddd', borderRadius: 8, fontSize: 13.5, color: '#111', fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box' },
-  textarea:  { width: '100%', padding: '0.6rem 0.8rem', border: '0.5px solid #ddd', borderRadius: 8, fontSize: 13.5, color: '#111', resize: 'vertical', fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box' },
-  btnPrimary:{ background: '#111', color: '#fff', border: 'none', borderRadius: 8, padding: '0.6rem 1.25rem', fontSize: 13.5, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" },
-  btnSec:    { background: '#fff', color: '#555', border: '0.5px solid #ddd', borderRadius: 8, padding: '0.6rem 1rem', fontSize: 13.5, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" },
-  err:       { background: '#FEE2E2', color: '#991B1B', border: '0.5px solid #FECACA', borderRadius: 8, padding: '0.65rem 1rem', fontSize: 13, marginBottom: 12 },
+  overlay:      { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 },
+  modal:        { background: '#fff', borderRadius: 16, padding: '1.75rem', width: '100%', maxWidth: 460, fontFamily: "'DM Sans', sans-serif", maxHeight: '90vh', overflowY: 'auto' },
+  header:       { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  titulo:       { fontFamily: "'DM Serif Display', serif", fontSize: 19, fontWeight: 400, color: '#111', margin: 0 },
+  btnX:         { background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#bbb', padding: 0, lineHeight: 1, flexShrink: 0 },
+  sub:          { fontSize: 13, color: '#888', margin: '0 0 16px' },
+  label:        { fontSize: 13, fontWeight: 500, color: '#444', marginBottom: 7 },
+  itemPreview:  { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: '#F7F6F3', borderRadius: 10, marginBottom: 18 },
+  itemThumb:    { width: 40, height: 40, borderRadius: 8, overflow: 'hidden', background: '#eee', flexShrink: 0 },
+  textarea:     { width: '100%', padding: '0.65rem 0.85rem', border: '0.5px solid #e0e0e0', borderRadius: 9, fontSize: 13.5, color: '#111', resize: 'vertical', fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box', outline: 'none' },
+  radio:        { display: 'flex', alignItems: 'center', gap: 9, padding: '8px 12px', border: '0.5px solid #e8e8e8', borderRadius: 9, fontSize: 13.5, cursor: 'pointer', color: '#444', transition: 'border-color 0.15s' },
+  radioSelected:{ border: '0.5px solid #111', background: '#FAFAFA', color: '#111', fontWeight: 500 },
+  radioCircle:  { width: 16, height: 16, borderRadius: '50%', border: '1.5px solid #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  radioInner:   { width: 8, height: 8, borderRadius: '50%', background: '#111' },
+  btnPrimary:   { background: '#111', color: '#fff', border: 'none', borderRadius: 9, padding: '0.65rem 1.35rem', fontSize: 13.5, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" },
+  btnSec:       { background: '#fff', color: '#555', border: '0.5px solid #ddd', borderRadius: 9, padding: '0.65rem 1rem', fontSize: 13.5, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" },
+  err:          { background: '#FEE2E2', color: '#991B1B', border: '0.5px solid #FECACA', borderRadius: 8, padding: '0.65rem 1rem', fontSize: 13, marginBottom: 14 },
+  chatBody:     { flex: 1, overflowY: 'auto', padding: '1rem 0', display: 'flex', flexDirection: 'column' },
+  chatInputWrap:{ display: 'flex', gap: 8, alignItems: 'flex-end', paddingTop: 10, borderTop: '0.5px solid #f0f0f0' },
+  chatInput:    { flex: 1, padding: '0.6rem 0.85rem', border: '0.5px solid #e0e0e0', borderRadius: 9, fontSize: 13.5, color: '#111', resize: 'none', fontFamily: "'DM Sans', sans-serif", outline: 'none' },
+  chatSendBtn:  { width: 38, height: 38, background: '#111', color: '#fff', border: 'none', borderRadius: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  chatResuelto: { background: '#DCFCE7', color: '#166534', border: '0.5px solid #BBF7D0', borderRadius: 8, padding: '0.65rem 1rem', fontSize: 13, textAlign: 'center', marginTop: 8 },
 };

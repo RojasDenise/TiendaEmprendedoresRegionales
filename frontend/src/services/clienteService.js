@@ -1,17 +1,10 @@
-/**
- * @fileoverview Servicio de acceso a la API para funcionalidades del cliente.
- * Centraliza las peticiones HTTP de facturas, valoraciones y reclamos.
- *
- * @module clienteService
- * @author Rojas Karen Denise; Sandoval María Victoria
- */
-
 const BASE_URL = 'http://localhost:5000/api';
 
-// ─── Facturas ────────────────────────────────────────────────────────────────
+// ─── Facturas ─────────────────────────────────────────────────────────────────
 
 /**
- * Retorna las facturas del cliente con items y estado de envio.
+ * Retorna las facturas del cliente con items, estado de envio,
+ * flag de valoración por producto y flag de reclamo por factura.
  * @param {number} id_cliente
  */
 export const obtenerFacturas = async (id_cliente) => {
@@ -71,5 +64,22 @@ export const agregarReclamo = async (datos) => {
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.message || 'Error al registrar reclamo');
+  return json;
+};
+
+export const obtenerMensajesReclamo = async (id_reclamo) => {
+  const res = await fetch(`${BASE_URL}/reclamos/${id_reclamo}/mensajes`);
+  if (!res.ok) throw new Error('Error al obtener mensajes');
+  return res.json();
+};
+
+export const responderReclamo = async (id_reclamo, id_cliente, contenido) => {
+  const res = await fetch(`${BASE_URL}/reclamos/${id_reclamo}/responder-cliente`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id_cliente, contenido }),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Error al enviar mensaje');
   return json;
 };

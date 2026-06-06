@@ -1,7 +1,127 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 const BASE_URL = 'http://localhost:5000/api';
 
+// ─── Componente ChatEmprendedor (Agregado antes del export default) ───────────
+function ChatEmprendedor({ id_reclamo, estado, id_usuario, onMensajeEnviado, onResolver }) {
+  const [mensajes, setMensajes] = useState([]);
+  const [texto,    setTexto]    = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [error,    setError]    = useState('');
+  const bottomRef = useRef(null);
+
+  const cargarMensajes = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/reclamos/${id_reclamo}/mensajes`);
+      const data = await res.json();
+      setMensajes(Array.isArray(data) ? data : []);
+    } catch { setError('Error al cargar mensajes'); }
+  };
+
+  useEffect(() => { cargarMensajes(); }, [id_reclamo]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [mensajes]);
+
+  const handleEnviar = async () => {
+    if (!texto.trim()) return;
+    setEnviando(true); setError('');
+    try {
+      const res = await fetch(`${BASE_URL}/reclamos/${id_reclamo}/responder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_usuario, contenido: texto.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setTexto('');
+      await cargarMensajes();
+      onMensajeEnviado();
+    } catch (e) { setError(e.message); }
+    finally { setEnviando(false); }
+  };
+
+  return (
+    <div style={s.seccion}>
+      <div style={s.seccionLabel}>Conversación</div>
+
+      <div style={sc.chatBody}>
+        {mensajes.map(msg => {
+          const esEmprendedor = msg.emisor === 'emprendedor';
+          return (
+            <div key={msg.id_mensaje} style={{
+              display: 'flex', flexDirection: 'column',
+              alignItems: esEmprendedor ? 'flex-end' : 'flex-start',
+              marginBottom: 10,
+            }}>
+              <div style={{ fontSize: 10.5, color: '#bbb', marginBottom: 3 }}>
+                {esEmprendedor ? 'Vos' : 'Cliente'}
+              </div>
+              <div style={{
+                maxWidth: '78%', padding: '8px 12px',
+                borderRadius: esEmprendedor ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
+                background: esEmprendedor ? '#111' : '#F3F4F6',
+                color: esEmprendedor ? '#fff' : '#111',
+                fontSize: 13.5, lineHeight: 1.5,
+              }}>
+                {msg.contenido}
+              </div>
+              <div style={{ fontSize: 10.5, color: '#ccc', marginTop: 3 }}>
+                {new Date(msg.fecha).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              </div>
+            </div>
+          );
+        })}
+        <div ref={bottomRef} />
+      </div>
+
+      {error && <div style={s.alertaError}>{error}</div>}
+
+      {estado !== 'Resuelto' && (
+        <>
+          <div style={sc.inputWrap}>
+            <textarea rows={2} style={sc.input}
+              placeholder="Escribí tu respuesta..."
+              value={texto} onChange={e => setTexto(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleEnviar(); } }}
+            />
+            <button onClick={handleEnviar} disabled={enviando || !texto.trim()} style={sc.sendBtn}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+
+          {estado === 'Respondido' && (
+            <button onClick={onResolver} style={s.btnResolver}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Marcar como resuelto
+            </button>
+          )}
+        </>
+      )}
+
+      {estado === 'Resuelto' && (
+        <div style={s.resueltoBanner}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#166534" strokeWidth="2.5">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          Este reclamo fue resuelto correctamente
+        </div>
+      )}
+    </div>
+  );
+}
+
+const sc = {
+  chatBody:  { maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: '8px 0', marginBottom: 10, borderBottom: '0.5px solid #f0f0f0' },
+  inputWrap: { display: 'flex', gap: 8, alignItems: 'flex-end', marginBottom: 10 },
+  input:     { flex: 1, padding: '0.6rem 0.85rem', border: '0.5px solid #ddd', borderRadius: 8, fontSize: 13.5, color: '#111', resize: 'none', fontFamily: "'DM Sans', sans-serif", outline: 'none' },
+  sendBtn:   { width: 36, height: 36, background: '#111', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+};
+
+// ─── Export Default Component ────────────────────────────────────────────────
 export default function Reclamos() {
   const [reclamos, setReclamos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -33,30 +153,6 @@ export default function Reclamos() {
       .then(setDetalle)
       .catch(() => setDetalle(null));
   }, [seleccionado]);
-
-  const handleResponder = async () => {
-    if (!respuesta.trim()) { setMsgError('Escribí una respuesta antes de enviar.'); return; }
-    setEnviando(true);
-    setMsgError('');
-    try {
-      const res = await fetch(`${BASE_URL}/reclamos/${seleccionado}/responder`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_usuario: user.id_usuario, contenido: respuesta }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al responder');
-      setMsgExito('Reclamo respondido con éxito');
-      setRespuesta('');
-      cargarReclamos();
-      fetch(`${BASE_URL}/reclamos/${seleccionado}`).then(r => r.json()).then(setDetalle);
-    } catch (err) {
-      setMsgError(err.message);
-    } finally {
-      setEnviando(false);
-      setTimeout(() => { setMsgExito(''); setMsgError(''); }, 3000);
-    }
-  };
 
   const handleResolver = async () => {
     if (!confirm('¿Confirmar que el reclamo fue resuelto?')) return;
@@ -201,55 +297,20 @@ export default function Reclamos() {
                 <div style={s.motivoBox}>{detalle.motivo}</div>
               </div>
 
-              {/* ✅ Corregido: respuesta en lugar de mensaje_respuesta */}
-              {detalle.respuesta && (
-                <div style={s.seccion}>
-                  <div style={s.seccionLabel}>Tu respuesta</div>
-                  <div style={s.respuestaBox}>
-                    <div style={s.respuestaTexto}>{detalle.respuesta}</div>
-                    <div style={s.respuestaFecha}>{formatearFecha(detalle.fecha_respuesta)}</div>
-                  </div>
-                </div>
-              )}
-
               {msgExito && <div style={s.alertaExito}>{msgExito}</div>}
               {msgError && <div style={s.alertaError}>{msgError}</div>}
 
-              {detalle.estado === 'Pendiente' && (
-                <div style={s.seccion}>
-                  <div style={s.seccionLabel}>Escribir respuesta</div>
-                  <textarea
-                    value={respuesta}
-                    onChange={e => setRespuesta(e.target.value)}
-                    placeholder="Redactá tu respuesta al cliente..."
-                    style={s.textarea}
-                  />
-                  <button onClick={handleResponder} disabled={enviando} style={s.btnResponder}>
-                    {enviando ? 'Enviando...' : 'Enviar respuesta'}
-                  </button>
-                </div>
-              )}
-
-              {detalle.estado === 'Respondido' && (
-                <div style={s.seccion}>
-                  <div style={s.seccionLabel}>¿El problema fue solucionado?</div>
-                  <button onClick={handleResolver} style={s.btnResolver}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                    Marcar como resuelto
-                  </button>
-                </div>
-              )}
-
-              {detalle.estado === 'Resuelto' && (
-                <div style={s.resueltoBanner}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#166534" strokeWidth="2.5">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                  </svg>
-                  Este reclamo fue resuelto correctamente
-                </div>
-              )}
+              {/* Chat Inyectado de manera interactiva */}
+              <ChatEmprendedor  
+                id_reclamo={detalle.id_reclamo}  
+                estado={detalle.estado}  
+                id_usuario={user?.id_usuario}  
+                onMensajeEnviado={() => {    
+                  cargarReclamos();    
+                  fetch(`${BASE_URL}/reclamos/${seleccionado}`).then(r => r.json()).then(setDetalle);  
+                }}  
+                onResolver={handleResolver}
+              />
             </div>
           )}
         </div>
@@ -262,9 +323,9 @@ export default function Reclamos() {
 
 function EstadoBadge({ estado, size = 'sm' }) {
   const estilos = {
-    Pendiente:  { background: '#FEF9C3', color: '#854D0E' },
+    Pendiente:   { background: '#FEF9C3', color: '#854D0E' },
     Respondido: { background: '#DBEAFE', color: '#1E40AF' },
-    Resuelto:   { background: '#DCFCE7', color: '#166534' },
+    Resuelto:    { background: '#DCFCE7', color: '#166534' },
   };
   const base = {
     fontSize: size === 'md' ? 12 : 11,
@@ -290,8 +351,7 @@ function formatearFecha(fecha) {
   return new Date(fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-// ─── Estilos ──────────────────────────────────────────────────────────────────
-
+// ─── Estilos Generales ────────────────────────────────────────────────────────
 const s = {
   topbar: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.5rem' },
   titulo: { fontFamily: "'DM Serif Display', serif", fontSize: 26, fontWeight: 400, color: '#111', margin: 0 },
@@ -299,7 +359,7 @@ const s = {
 
   metricas: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginBottom: '1.5rem' },
   card: { background: '#fff', border: '0.5px solid #ebebeb', borderRadius: 12, padding: '1.1rem 1.25rem' },
-  cardHero: { background: '#111', border: 'none', gridColumn: 'span 2' },
+  cardHero: { background: '#111', border: 'none', gridColumn: 'span 2 / span 2' },
   cardHeader: { marginBottom: '0.75rem' },
   cardIcon: { width: 32, height: 32, borderRadius: 8, background: '#F5F4F0', border: '0.5px solid #ebebeb', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   cardLabel: { fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#aaa', fontWeight: 500, marginBottom: 6 },
@@ -339,14 +399,7 @@ const s = {
 
   motivoBox: { background: '#F7F6F3', borderRadius: 8, padding: '0.85rem 1rem', fontSize: 13.5, color: '#444', lineHeight: 1.6, border: '0.5px solid #ebebeb' },
 
-  respuestaBox: { background: '#EFF6FF', borderRadius: 8, padding: '0.85rem 1rem', border: '0.5px solid #BFDBFE' },
-  respuestaTexto: { fontSize: 13.5, color: '#1E40AF', lineHeight: 1.6 },
-  respuestaFecha: { fontSize: 11, color: '#93C5FD', marginTop: 6 },
-
-  textarea: { width: '100%', minHeight: 100, padding: '0.7rem 0.85rem', border: '0.5px solid #ddd', borderRadius: 8, fontSize: 13.5, color: '#111', resize: 'vertical', fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box', outline: 'none', marginBottom: 10 },
-  btnResponder: { display: 'flex', alignItems: 'center', gap: 6, background: '#111', color: '#fff', border: 'none', borderRadius: 8, padding: '0.55rem 1.1rem', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" },
   btnResolver: { display: 'flex', alignItems: 'center', gap: 6, background: '#fff', color: '#166534', border: '0.5px solid #BBF7D0', borderRadius: 8, padding: '0.55rem 1.1rem', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" },
-
   resueltoBanner: { display: 'flex', alignItems: 'center', gap: 7, background: '#DCFCE7', border: '0.5px solid #BBF7D0', borderRadius: 8, padding: '0.7rem 1rem', fontSize: 13, color: '#166534', fontWeight: 500 },
 
   alertaExito: { background: '#DCFCE7', color: '#166534', border: '0.5px solid #BBF7D0', borderRadius: 8, padding: '0.55rem 0.85rem', fontSize: 13, marginBottom: '1rem' },
