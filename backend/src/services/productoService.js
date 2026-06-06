@@ -20,30 +20,13 @@ const verificarStock = (producto) => {
 // SERVICIOS DE PRODUCTO
 // ====================================================================
 
-const obtenerProductos = async (id_usuario = null) => {
+const obtenerProductos = async (id_usuario) => {
   const pool = await getConnection();
-  const request = pool.request();
 
-  let query = `
-    SELECT p.*, 
-           c.descripcion AS categoria_nombre, 
-           ep.descripcion AS estado_nombre,
-           u.apellidoNombre AS nombre_usuario,
-           u.nombreEmprendimiento
-    FROM Producto p
-    JOIN Categoria c ON p.id_categoria = c.id_categoria
-    JOIN Estado_Producto ep ON p.id_estado_prod = ep.id_estado_prod
-    LEFT JOIN Usuario u ON p.id_usuario = u.id_usuario
-    WHERE p.id_estado_prod = 1
-  `;
+  const result = await pool.request()
+    .input('id_usuario', sql.Int, parseInt(id_usuario))
+    .execute('sp_obtenerProductos');
 
-  if (id_usuario) {
-    request.input('id_usuario', sql.Int, parseInt(id_usuario));
-    query += ' AND p.id_usuario = @id_usuario';
-  }
-
-  query += ' ORDER BY p.id_producto DESC';
-  const result = await request.query(query);
   return result.recordset;
 };
 
@@ -115,39 +98,26 @@ const crearProducto = async ({ nombre, descripcion, precio, stock, id_categoria,
   return producto;
 };
 
-const actualizarProducto = async (id, { nombre, descripcion, precio, stock, id_categoria, imagen }) => {
+const actualizarProducto = async (
+  id,
+  { nombre, descripcion, precio, stock, id_categoria, imagen }
+) => {
+
   const pool = await getConnection();
-  const request = pool.request();
 
-  request.input('id', sql.Int, parseInt(id));
-  request.input('nombre', sql.VarChar(200), nombre);
-  request.input('descripcion', sql.VarChar(sql.MAX), descripcion);
-  request.input('precio', sql.Decimal(10, 2), precio);
-  request.input('stock', sql.Int, stock);
-  request.input('id_categoria', sql.Int, id_categoria);
-
-  let queryImagen = "";
-  if (imagen) {
-    request.input('imagen', sql.VarChar(255), imagen);
-    queryImagen = ", imagen = @imagen";
-  }
-
-  const result = await request.query(`
-    UPDATE Producto 
-    SET nombre = @nombre, 
-        descripcion = @descripcion, 
-        precio = @precio, 
-        stock = @stock, 
-        id_categoria = @id_categoria
-        ${queryImagen}
-    WHERE id_producto = @id;
-
-    SELECT * FROM Producto WHERE id_producto = @id;
-  `);
+  const result = await pool.request()
+    .input('id_producto', sql.Int, parseInt(id))
+    .input('nombre', sql.VarChar(50), nombre)
+    .input('descripcion', sql.VarChar(200), descripcion)
+    .input('precio', sql.Decimal(10, 2), parseFloat(precio))
+    .input('stock', sql.Int, parseInt(stock))
+    .input('id_categoria', sql.Int, parseInt(id_categoria))
+    .input('imagen', sql.VarChar(255), imagen || null)
+    .execute('sp_actualizarProducto');
 
   const producto = result.recordset[0];
 
-  // Observer: verificar stock al actualizar
+  // Observer
   verificarStock(producto);
 
   return producto;
