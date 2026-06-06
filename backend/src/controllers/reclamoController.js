@@ -1,4 +1,26 @@
 const reclamoService = require('../services/reclamoService');
+const multer = require('multer');
+const path = require('path');
+
+// ─── Configuración multer ────────────────────────────────────────────────────
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'public/uploads'),
+  filename:    (req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, unique + path.extname(file.originalname));
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  const permitidos = /jpeg|jpg|png|webp/;
+  permitidos.test(path.extname(file.originalname).toLowerCase())
+    ? cb(null, true)
+    : cb(new Error('Solo se permiten imágenes (jpg, png, webp)'));
+};
+
+const upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
+
+// ─── Controllers ─────────────────────────────────────────────────────────────
 
 const listarReclamos = async (req, res) => {
   try {
@@ -39,8 +61,9 @@ const responderReclamo = async (req, res) => {
     if (!id_usuario || !contenido) {
       return res.status(400).json({ error: 'Complete todos los campos' });
     }
+    const imagen = req.file ? req.file.filename : null;
     const result = await reclamoService.responderReclamo(
-      parseInt(id_reclamo), parseInt(id_usuario), contenido
+      parseInt(id_reclamo), parseInt(id_usuario), contenido, imagen
     );
     res.status(201).json(result);
   } catch (error) {
@@ -56,8 +79,9 @@ const responderCliente = async (req, res) => {
     if (!id_cliente || !contenido) {
       return res.status(400).json({ error: 'Complete todos los campos' });
     }
+    const imagen = req.file ? req.file.filename : null;
     const result = await reclamoService.responderCliente(
-      parseInt(id_reclamo), parseInt(id_cliente), contenido
+      parseInt(id_reclamo), parseInt(id_cliente), contenido, imagen
     );
     res.status(201).json(result);
   } catch (error) {
@@ -78,10 +102,13 @@ const resolverReclamo = async (req, res) => {
 
 const crearReclamo = async (req, res) => {
   try {
-    const result = await reclamoService.crearReclamo(req.body);
+    const imagen = req.file ? req.file.filename : null;
+    const result = await reclamoService.crearReclamo({ ...req.body, imagen });
     res.status(201).json(result);
   } catch (error) {
-    const status = error.message.includes('Ya existe') ? 409 : 400;
+    const status = error.message.includes('Ya existe') ? 409
+      : error.message.includes('entregadas') ? 403
+      : 400;
     res.status(status).json({ message: error.message });
   }
 };
@@ -97,6 +124,7 @@ const obtenerReclamosCliente = async (req, res) => {
 };
 
 module.exports = {
+  upload,
   listarReclamos,
   obtenerDetalle,
   obtenerMensajes,
