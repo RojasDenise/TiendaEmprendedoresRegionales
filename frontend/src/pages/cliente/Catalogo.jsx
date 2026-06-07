@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { obtenerProductos, obtenerCategorias } from '../../services/productoService';
+import { agregarAlCarrito } from '../../services/carritoService';
 
 /**
  * @fileoverview Catálogo de productos del cliente.
@@ -13,7 +14,6 @@ import { obtenerProductos, obtenerCategorias } from '../../services/productoServ
 
 const IMG_URL = 'http://localhost:5000/uploads/';
 
-/** Genera iniciales a partir del nombre del emprendimiento. */
 const getInitials = (nombre = '') =>
   nombre.trim().slice(0, 2).toUpperCase() || '??';
 
@@ -23,7 +23,13 @@ export default function Catalogo() {
   const [catActiva,   setCatActiva]   = useState('todos');
   const [busqueda,    setBusqueda]    = useState('');
   const [cargando,    setCargando]    = useState(true);
-  const navigate = useNavigate();
+  const [agregando,   setAgregando]   = useState(null); // id_producto en proceso
+  const [toastMsg,    setToastMsg]    = useState('');
+  const [toastOk,     setToastOk]     = useState(true);
+
+  const navigate   = useNavigate();
+  const user       = JSON.parse(sessionStorage.getItem('user') || 'null');
+  const id_cliente = user?.id_usuario;
 
   useEffect(() => {
     Promise.all([obtenerProductos(), obtenerCategorias()])
@@ -34,6 +40,26 @@ export default function Catalogo() {
       .catch(console.error)
       .finally(() => setCargando(false));
   }, []);
+
+  const mostrarToast = (msg, ok = true) => {
+    setToastMsg(msg); setToastOk(ok);
+    setTimeout(() => setToastMsg(''), 3500);
+  };
+
+  const handleAgregar = async (e, id_producto) => {
+    e.stopPropagation(); // evita que navegue al detalle
+    if (!id_cliente) { navigate('/login'); return; }
+    setAgregando(id_producto);
+    try {
+      await agregarAlCarrito(id_cliente, id_producto, 1);
+      window.dispatchEvent(new Event('carrito:actualizar'));
+      mostrarToast('Producto agregado al carrito');
+    } catch (err) {
+      mostrarToast(err.message || 'Error al agregar al carrito', false);
+    } finally {
+      setAgregando(null);
+    }
+  };
 
   const productosFiltrados = productos.filter(p => {
     const coincideCategoria =
@@ -46,6 +72,13 @@ export default function Catalogo() {
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
+
+      {toastMsg && (
+        <div style={{ ...s.toast, background: toastOk ? '#111' : '#DC2626' }}>
+          {toastOk ? '✓' : '✕'} {toastMsg}
+        </div>
+      )}
+
       {/* Topbar */}
       <div style={s.topbar}>
         <div>
@@ -120,7 +153,6 @@ export default function Catalogo() {
                 <div style={s.categoriaBadge}>{p.categoria_nombre}</div>
                 <div style={s.nombre}>{p.nombre}</div>
 
-                {/* Emprendedor */}
                 <div style={s.emprendedor}>
                   <div style={s.avatarEmp}>
                     {getInitials(p.nombreEmprendimiento || p.nombre_usuario)}
@@ -134,7 +166,16 @@ export default function Catalogo() {
                   <span style={s.precio}>
                     ${Number(p.precio).toLocaleString('es-AR')}
                   </span>
-                  <button style={s.btnAgregar}>Agregar</button>
+                  <button
+                    style={{
+                      ...s.btnAgregar,
+                      opacity: agregando === p.id_producto ? 0.6 : 1,
+                    }}
+                    onClick={e => handleAgregar(e, p.id_producto)}
+                    disabled={agregando === p.id_producto || p.stock === 0}
+                  >
+                    {agregando === p.id_producto ? '...' : 'Agregar'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -146,6 +187,7 @@ export default function Catalogo() {
 }
 
 const s = {
+  toast:            { position: 'fixed', bottom: 24, right: 24, color: '#fff', padding: '0.75rem 1.25rem', borderRadius: 10, fontSize: 13.5, zIndex: 1000, boxShadow: '0 4px 16px rgba(0,0,0,0.18)', display: 'flex', alignItems: 'center', gap: 8 },
   topbar:           { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.25rem', gap: 16 },
   titulo:           { fontFamily: "'DM Serif Display', serif", fontSize: 26, fontWeight: 400, color: '#111', margin: 0 },
   subtitulo:        { fontSize: 12.5, color: '#aaa', margin: '4px 0 0' },

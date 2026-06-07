@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { obtenerProductoPorId } from '../../services/productoService';
 import { obtenerValoraciones, agregarValoracion, obtenerFacturas } from '../../services/clienteService';
+import { agregarAlCarrito } from '../../services/carritoService';
 
 /**
  * @fileoverview Detalle de un producto.
@@ -40,6 +41,7 @@ export default function DetalleProducto() {
   const { id } = useParams();
   const navigate = useNavigate();
   const user = JSON.parse(sessionStorage.getItem('user') || 'null');
+  const id_cliente = user?.id_usuario;
 
   const [producto,     setProducto]     = useState(null);
   const [valorData,    setValorData]     = useState({ promedio: 0, total: 0, valoraciones: [] });
@@ -53,9 +55,32 @@ export default function DetalleProducto() {
   const [mensajeOk,  setMensajeOk]  = useState('');
   const [error,      setError]      = useState('');
 
+  // Carrito
+  const [agregando,  setAgregando]  = useState(false);
+  const [toastMsg,   setToastMsg]   = useState('');
+  const [toastOk,    setToastOk]    = useState(true);
+
+  const mostrarToast = (msg, ok = true) => {
+    setToastMsg(msg); setToastOk(ok);
+    setTimeout(() => setToastMsg(''), 3500);
+  };
+
+  const handleAgregar = async () => {
+    if (!id_cliente) { navigate('/login'); return; }
+    setAgregando(true);
+    try {
+      await agregarAlCarrito(id_cliente, parseInt(id), 1);
+      window.dispatchEvent(new Event('carrito:actualizar'));
+      mostrarToast('Producto agregado al carrito');
+    } catch (err) {
+      mostrarToast(err.message || 'Error al agregar al carrito', false);
+    } finally {
+      setAgregando(false);
+    }
+  };
+
   const cargarDatos = async () => {
     try {
-      // ✅ Usa obtenerProductoPorId — trae el producto con JOIN a Usuario
       const prod = await obtenerProductoPorId(id);
       setProducto(prod || null);
 
@@ -112,11 +137,17 @@ export default function DetalleProducto() {
   if (cargando) return <div style={s.empty}>Cargando...</div>;
   if (!producto) return <div style={s.empty}>Producto no encontrado.</div>;
 
-  // ✅ Usa nombreEmprendimiento, con fallback a nombre_usuario
   const nombreEmp = producto.nombreEmprendimiento || producto.nombre_usuario || '—';
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", maxWidth: 780 }}>
+
+      {toastMsg && (
+        <div style={{ ...s.toast, background: toastOk ? '#111' : '#DC2626' }}>
+          {toastOk ? '✓' : '✕'} {toastMsg}
+        </div>
+      )}
+
       <button onClick={() => navigate('/catalogo')} style={s.btnVolver}>
         ← Volver al catálogo
       </button>
@@ -157,7 +188,6 @@ export default function DetalleProducto() {
             </span>
           </div>
 
-          {/* ✅ Muestra nombreEmprendimiento */}
           <div style={s.empCard}>
             <div style={s.avatarEmp}>{getInitials(nombreEmp)}</div>
             <div>
@@ -165,6 +195,21 @@ export default function DetalleProducto() {
               <div style={s.empNombre}>{nombreEmp}</div>
             </div>
           </div>
+
+          {/* Botón agregar al carrito — solo para clientes */}
+          {user?.id_rol === 3 && (
+            <button
+              onClick={handleAgregar}
+              disabled={agregando || producto.stock === 0}
+              style={{ ...s.btnAgregar, marginTop: 16, opacity: agregando ? 0.6 : 1 }}
+            >
+              {producto.stock === 0
+                ? 'Sin stock'
+                : agregando
+                  ? 'Agregando...'
+                  : '+ Agregar al carrito'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -232,6 +277,7 @@ export default function DetalleProducto() {
 }
 
 const s = {
+  toast:           { position: 'fixed', bottom: 24, right: 24, color: '#fff', padding: '0.75rem 1.25rem', borderRadius: 10, fontSize: 13.5, zIndex: 1000, boxShadow: '0 4px 16px rgba(0,0,0,0.18)', display: 'flex', alignItems: 'center', gap: 8 },
   empty:           { textAlign: 'center', color: '#aaa', padding: '3rem', fontSize: 14 },
   btnVolver:       { background: 'none', border: 'none', color: '#888', fontSize: 13, cursor: 'pointer', padding: '0 0 1rem', fontFamily: "'DM Sans', sans-serif" },
   cardPrincipal:   { display: 'flex', gap: 24, background: '#fff', border: '0.5px solid #ebebeb', borderRadius: 14, overflow: 'hidden', marginBottom: 20 },
@@ -252,6 +298,7 @@ const s = {
   avatarEmp:       { width: 36, height: 36, borderRadius: '50%', background: '#111', color: '#fff', fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   empLabel:        { fontSize: 10, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.06em' },
   empNombre:       { fontSize: 13.5, fontWeight: 500, color: '#111' },
+  btnAgregar:      { width: '100%', padding: '0.7rem', background: '#111', color: '#fff', border: 'none', borderRadius: 9, fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" },
   seccion:         { background: '#fff', border: '0.5px solid #ebebeb', borderRadius: 14, padding: '1.5rem', marginBottom: 16 },
   seccionTitulo:   { fontFamily: "'DM Serif Display', serif", fontSize: 18, fontWeight: 400, color: '#111', margin: '0 0 4px' },
   seccionSub:      { fontSize: 13, color: '#aaa', margin: '0 0 16px' },

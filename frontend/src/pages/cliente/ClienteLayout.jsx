@@ -1,5 +1,7 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { obtenerCarrito } from '../../services/carritoService';
+import Carrito from './Carrito';
 
 const navCliente = [
   {
@@ -41,16 +43,40 @@ const navCliente = [
 ];
 
 export default function ClienteLayout() {
-  const user = JSON.parse(sessionStorage.getItem('user') || 'null');
+  const user       = JSON.parse(sessionStorage.getItem('user') || 'null');
+  const id_cliente = user?.id_usuario;
+
+  const [carritoAbierto, setCarritoAbierto] = useState(false);
+  const [itemsCarrito,   setItemsCarrito]   = useState([]);
 
   useEffect(() => {
     const usuarioGuardado = JSON.parse(sessionStorage.getItem('user') || 'null');
-
     if (!usuarioGuardado || usuarioGuardado.id_rol !== 3) {
       sessionStorage.clear();
       window.location.replace('/login');
     }
   }, []);
+
+  const cargarCarrito = useCallback(async () => {
+    if (!id_cliente) return;
+    try {
+      const data = await obtenerCarrito(id_cliente);
+      setItemsCarrito(data);
+    } catch {
+      setItemsCarrito([]);
+    }
+  }, [id_cliente]);
+
+  useEffect(() => { cargarCarrito(); }, [cargarCarrito]);
+
+  // Escucha el evento que disparan Catalogo y DetalleProducto al agregar un item
+  useEffect(() => {
+    const handler = () => cargarCarrito();
+    window.addEventListener('carrito:actualizar', handler);
+    return () => window.removeEventListener('carrito:actualizar', handler);
+  }, [cargarCarrito]);
+
+  const totalItems = itemsCarrito.reduce((acc, i) => acc + i.cantidad, 0);
 
   const initials =
     user?.apellidoNombre?.split(',')[0]?.trim().slice(0, 2).toUpperCase() || 'U';
@@ -68,23 +94,16 @@ export default function ClienteLayout() {
             <svg width="18" height="18" viewBox="0 0 32 32" fill="none">
               <path
                 d="M8 12h16l-2 12H10L8 12z"
-                fill="white"
-                stroke="white"
-                strokeWidth="0.5"
-                strokeLinejoin="round"
+                fill="white" stroke="white" strokeWidth="0.5" strokeLinejoin="round"
               />
               <path
                 d="M12 12c0-2.21 1.79-4 4-4s4 1.79 4 4"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                fill="none"
+                stroke="white" strokeWidth="2" strokeLinecap="round" fill="none"
               />
               <circle cx="13" cy="21" r="1" fill="#111" />
               <circle cx="19" cy="21" r="1" fill="#111" />
             </svg>
           </div>
-
           <div>
             <div style={s.brandName}>Tienda de Emprendedores Regionales</div>
           </div>
@@ -107,12 +126,25 @@ export default function ClienteLayout() {
           </NavLink>
         ))}
 
+        {/* Botón carrito con badge */}
+        <button onClick={() => setCarritoAbierto(true)} style={s.btnCarrito}>
+          <span style={{ opacity: 0.7, display: 'flex' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+            </svg>
+          </span>
+          Carrito
+          {totalItems > 0 && (
+            <span style={s.badge}>{totalItems > 99 ? '99+' : totalItems}</span>
+          )}
+        </button>
+
         <div style={s.sidebarFooter}>
           <div style={s.userRow}>
             <div style={s.avatar}>{initials}</div>
             <div style={s.userName}>{user?.apellidoNombre?.split(',')[0] || 'Usuario'}</div>
           </div>
-
           <button onClick={handleLogout} style={s.btnLogout}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -127,6 +159,14 @@ export default function ClienteLayout() {
       <main style={s.main}>
         <Outlet />
       </main>
+
+      {/* Sidebar carrito */}
+      <Carrito
+        abierto={carritoAbierto}
+        onCerrar={() => setCarritoAbierto(false)}
+        items={itemsCarrito}
+        onActualizar={cargarCarrito}
+      />
     </div>
   );
 }
@@ -195,6 +235,35 @@ const s = {
     color: '#111',
     fontWeight: 500,
     borderRadius: '0 8px 8px 0',
+  },
+  btnCarrito: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    padding: '0.55rem 1.25rem',
+    fontSize: 13.5,
+    color: '#888',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontFamily: "'DM Sans', sans-serif",
+    width: '100%',
+    textAlign: 'left',
+    position: 'relative',
+  },
+  badge: {
+    background: '#111',
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 600,
+    minWidth: 17,
+    height: 17,
+    borderRadius: '50%',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0 3px',
+    marginLeft: 'auto',
   },
   sidebarFooter: {
     marginTop: 'auto',
