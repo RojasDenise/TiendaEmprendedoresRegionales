@@ -108,7 +108,9 @@ const crearReclamo = async (req, res) => {
   } catch (error) {
     const status = error.message.includes('Ya existe') ? 409
       : error.message.includes('entregadas') ? 403
+      : error.message.includes('no realizadas') ? 403
       : 400;
+
     res.status(status).json({ message: error.message });
   }
 };

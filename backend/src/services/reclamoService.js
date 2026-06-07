@@ -160,7 +160,7 @@ const responderReclamo = async (id_reclamo, id_usuario, contenido, imagen = null
   const id_estadoRespondido = await obtenerIdEstado(pool, 'Respondido');
   await actualizarEstadoReclamo(pool, parseInt(id_reclamo), id_estadoRespondido);
 
-  return { mensaje: 'Respuesta registrada con éxito', id_mensaje };
+  return { mensaje: 'Respuesta registrada con éxito'};
 };
 
 const resolverReclamo = async (id_reclamo) => {
@@ -193,8 +193,23 @@ const crearReclamo = async ({ id_factura, id_cliente, motivo, descripcion, image
     `);
 
   if (!envioResult.recordset[0] || envioResult.recordset[0].id_estado_envio !== 3) {
-    throw new Error('Solo podés reclamar compras que ya fueron entregadas');
+    throw new Error('No puede realizar reclamos sobre compras que no fueron realizadas por usted');
   }
+  // Verificar que la factura pertenezca al cliente
+const facturaCliente = await pool.request()
+  .input('id_factura', sql.Int, parseInt(id_factura))
+  .input('id_cliente', sql.Int, parseInt(id_cliente))
+  .query(`
+    SELECT 1
+    FROM Factura f
+    JOIN Pedido p ON f.id_pedido = p.id_pedido
+    WHERE f.id_factura = @id_factura
+      AND p.id_cliente = @id_cliente
+  `);
+
+if (facturaCliente.recordset.length === 0) {
+  throw new Error('No puede realizar reclamos sobre compras no realizadas por el cliente');
+}
 
   const existe = await pool.request()
     .input('id_factura', sql.Int, parseInt(id_factura))
@@ -209,7 +224,7 @@ const crearReclamo = async ({ id_factura, id_cliente, motivo, descripcion, image
 
   await insertarMensaje(pool, descripcion.trim(), fecha, id_reclamo, null, imagen);
 
-  return { mensaje: 'Reclamo registrado con éxito', id_reclamo };
+  return { mensaje: 'Reclamo registrado con éxito'};
 };
 
 const responderCliente = async (id_reclamo, id_cliente, contenido, imagen = null) => {
@@ -228,7 +243,7 @@ const responderCliente = async (id_reclamo, id_cliente, contenido, imagen = null
     pool, contenido.trim(), new Date(), parseInt(id_reclamo), null, imagen
   );
 
-  return { mensaje: 'Mensaje enviado con éxito', id_mensaje };
+  return { mensaje: 'Mensaje enviado con éxito'};
 };
 
 const obtenerReclamosCliente = async (id_cliente) => {
