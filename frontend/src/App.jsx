@@ -11,6 +11,8 @@ import ClienteLayout from './pages/cliente/ClienteLayout';
 import Catalogo from './pages/cliente/Catalogo';
 import DetalleProducto from './pages/cliente/DetalleProducto';
 import MisCompras from './pages/cliente/MisCompras';
+import Checkout from './pages/cliente/Checkout';
+import Perfil from './pages/cliente/Perfil';
 import Reclamos from './pages/reclamo/reclamo';
 import './index.css';
 
@@ -45,6 +47,7 @@ import './index.css';
  *   - index → Catálogo de productos.
  *   - `producto/:id` → Detalle de un producto.
  *   - `mis-compras` → Historial de compras del cliente.
+ *   - `checkout` → Página de confirmación de compra.
  * - `*` → Cualquier ruta no definida redirige a `/login`.
  *
  * @component
@@ -74,6 +77,8 @@ export default function App() {
           <Route index element={<Catalogo />} />
           <Route path="producto/:id" element={<DetalleProducto />} />
           <Route path="mis-compras" element={<MisCompras />} />
+          <Route path="checkout" element={<Checkout />} />
+          <Route path="perfil"   element={<Perfil />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />
