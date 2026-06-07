@@ -5,40 +5,45 @@ const { getConnection } = require('../config/db');
 // FUNCIONES INTERNAS
 // ====================================================================
 
-const insertarMensaje = async (pool, contenido, fecha, id_reclamo, id_usuario = null) => {
+const insertarMensaje = async (pool, contenido, fecha, id_reclamo, id_usuario = null, imagen = null) => {
   const result = await pool.request()
-    .input('contenido',   sql.VarChar(255), contenido)
-    .input('fecha',       sql.DateTime,     fecha)
-    .input('id_reclamo',  sql.Int,          id_reclamo)
-    .input('id_usuario',  sql.Int,          id_usuario)
+    .input('contenido',  sql.VarChar(255), contenido)
+    .input('fecha',      sql.DateTime,     fecha)
+    .input('id_reclamo', sql.Int,          id_reclamo)
+    .input('id_usuario', sql.Int,          id_usuario)
+    .input('imagen',     sql.VarChar(255), imagen)
     .query(`
-      INSERT INTO Mensaje_Reclamo (contenido, fecha_emision_mensaje, id_reclamo, id_usuario)
+      INSERT INTO Mensaje_Reclamo (contenido, fecha_emision_mensaje, id_reclamo, id_usuario, imagen)
       OUTPUT INSERTED.id_mensaje
-      VALUES (@contenido, @fecha, @id_reclamo, @id_usuario)
+      VALUES (@contenido, @fecha, @id_reclamo, @id_usuario, @imagen)
     `);
   return result.recordset[0].id_mensaje;
 };
 
-const actualizarEstadoReclamo = async (pool, id_reclamo, id_estadoReclamo, id_mensaje = null) => {
-  const request = pool.request()
-    .input('id_reclamo',      sql.Int, id_reclamo)
-    .input('id_estadoReclamo', sql.Int, id_estadoReclamo);
-
-  if (id_mensaje) {
-    request.input('id_mensaje', sql.Int, id_mensaje);
-    await request.query(`
-      UPDATE Reclamo 
-      SET id_estadoReclamo = @id_estadoReclamo,
-          id_mensaje = @id_mensaje
-      WHERE id_reclamo = @id_reclamo
+const insertarReclamo = async (pool, fecha, motivo, id_estadoReclamo, id_factura, id_cliente) => {
+  const result = await pool.request()
+    .input('fecha_reclamo',    sql.DateTime,     fecha)
+    .input('motivo',           sql.VarChar(255), motivo)
+    .input('id_estadoReclamo', sql.Int,          id_estadoReclamo)
+    .input('id_factura',       sql.Int,          id_factura)
+    .input('id_cliente',       sql.Int,          id_cliente)
+    .query(`
+      INSERT INTO Reclamo (fecha_reclamo, motivo, id_estadoReclamo, id_factura, id_cliente)
+      OUTPUT INSERTED.id_reclamo
+      VALUES (@fecha_reclamo, @motivo, @id_estadoReclamo, @id_factura, @id_cliente)
     `);
-  } else {
-    await request.query(`
+  return result.recordset[0].id_reclamo;
+};
+
+const actualizarEstadoReclamo = async (pool, id_reclamo, id_estadoReclamo) => {
+  await pool.request()
+    .input('id_reclamo',       sql.Int, id_reclamo)
+    .input('id_estadoReclamo', sql.Int, id_estadoReclamo)
+    .query(`
       UPDATE Reclamo 
       SET id_estadoReclamo = @id_estadoReclamo
       WHERE id_reclamo = @id_reclamo
     `);
-  }
 };
 
 const obtenerIdEstado = async (pool, descripcion) => {
@@ -110,7 +115,6 @@ const obtenerDetalle = async (id_reclamo) => {
       JOIN Factura f         ON r.id_factura = f.id_factura
       WHERE r.id_reclamo = @id_reclamo
     `);
-
   if (!result.recordset[0]) throw new Error('Reclamo no encontrado');
   return result.recordset[0];
 };
@@ -125,6 +129,7 @@ const obtenerMensajes = async (id_reclamo) => {
         mr.contenido,
         mr.fecha_emision_mensaje AS fecha,
         mr.id_usuario,
+        mr.imagen,
         CASE 
           WHEN mr.id_usuario IS NULL THEN 'cliente'
           ELSE 'emprendedor'
@@ -136,7 +141,7 @@ const obtenerMensajes = async (id_reclamo) => {
   return result.recordset;
 };
 
-const responderReclamo = async (id_reclamo, id_usuario, contenido) => {
+const responderReclamo = async (id_reclamo, id_usuario, contenido, imagen = null) => {
   if (!contenido || contenido.trim() === '') {
     throw new Error('El contenido de la respuesta no puede estar vacío');
   }
@@ -149,11 +154,11 @@ const responderReclamo = async (id_reclamo, id_usuario, contenido) => {
   }
 
   const id_mensaje = await insertarMensaje(
-    pool, contenido.trim(), new Date(), parseInt(id_reclamo), parseInt(id_usuario)
+    pool, contenido.trim(), new Date(), parseInt(id_reclamo), parseInt(id_usuario), imagen
   );
 
   const id_estadoRespondido = await obtenerIdEstado(pool, 'Respondido');
-  await actualizarEstadoReclamo(pool, parseInt(id_reclamo), id_estadoRespondido, id_mensaje);
+  await actualizarEstadoReclamo(pool, parseInt(id_reclamo), id_estadoRespondido);
 
   return { mensaje: 'Respuesta registrada con éxito', id_mensaje };
 };
@@ -170,58 +175,44 @@ const resolverReclamo = async (id_reclamo) => {
   return { mensaje: 'El reclamo ha sido marcado como resuelto' };
 };
 
-const crearReclamo = async ({ id_factura, id_cliente, motivo, descripcion }) => {
+const crearReclamo = async ({ id_factura, id_cliente, motivo, descripcion, imagen = null }) => {
   if (!id_factura || !id_cliente || !motivo || !descripcion) {
     throw new Error('Faltan campos requeridos');
   }
 
   const pool = await getConnection();
 
+  const envioResult = await pool.request()
+    .input('id_factura', sql.Int, parseInt(id_factura))
+    .query(`
+      SELECT e.id_estado_envio
+      FROM Factura f
+      JOIN Pedido p  ON f.id_pedido = p.id_pedido
+      JOIN Envio e   ON p.id_envio  = e.id_envio
+      WHERE f.id_factura = @id_factura
+    `);
+
+  if (!envioResult.recordset[0] || envioResult.recordset[0].id_estado_envio !== 3) {
+    throw new Error('Solo podés reclamar compras que ya fueron entregadas');
+  }
+
   const existe = await pool.request()
     .input('id_factura', sql.Int, parseInt(id_factura))
     .input('id_cliente', sql.Int, parseInt(id_cliente))
-    .query(`
-      SELECT 1 FROM Reclamo
-      WHERE id_factura = @id_factura AND id_cliente = @id_cliente
-    `);
+    .query(`SELECT 1 FROM Reclamo WHERE id_factura = @id_factura AND id_cliente = @id_cliente`);
 
   if (existe.recordset.length > 0) throw new Error('Ya existe un reclamo para esta compra');
 
   const fecha = new Date();
+  const id_estadoReclamo = await obtenerIdEstado(pool, 'Pendiente');
+  const id_reclamo = await insertarReclamo(pool, fecha, motivo.trim(), id_estadoReclamo, parseInt(id_factura), parseInt(id_cliente));
 
-  // Primero insertamos el reclamo sin id_mensaje para obtener su id
-  const estadoResult = await pool.request()
-    .input('descripcion', sql.VarChar(50), 'Pendiente')
-    .query(`SELECT id_estadoReclamo FROM Estado_Reclamo WHERE descripcion = @descripcion`);
-  const id_estadoReclamo = estadoResult.recordset[0].id_estadoReclamo;
-
-  const reclamoResult = await pool.request()
-    .input('fecha_reclamo',    sql.DateTime,     fecha)
-    .input('motivo',           sql.VarChar(255), motivo.trim())
-    .input('id_estadoReclamo', sql.Int,          id_estadoReclamo)
-    .input('id_factura',       sql.Int,          parseInt(id_factura))
-    .input('id_cliente',       sql.Int,          parseInt(id_cliente))
-    .query(`
-      INSERT INTO Reclamo (fecha_reclamo, motivo, id_estadoReclamo, id_factura, id_cliente)
-      OUTPUT INSERTED.id_reclamo
-      VALUES (@fecha_reclamo, @motivo, @id_estadoReclamo, @id_factura, @id_cliente)
-    `);
-
-  const id_reclamo = reclamoResult.recordset[0].id_reclamo;
-
-  // Ahora insertamos el mensaje con el id_reclamo real
-  const id_mensaje = await insertarMensaje(pool, descripcion.trim(), fecha, id_reclamo, null);
-
-  // Actualizamos el reclamo con el id_mensaje inicial
-  await pool.request()
-    .input('id_reclamo', sql.Int, id_reclamo)
-    .input('id_mensaje', sql.Int, id_mensaje)
-    .query(`UPDATE Reclamo SET id_mensaje = @id_mensaje WHERE id_reclamo = @id_reclamo`);
+  await insertarMensaje(pool, descripcion.trim(), fecha, id_reclamo, null, imagen);
 
   return { mensaje: 'Reclamo registrado con éxito', id_reclamo };
 };
 
-const responderCliente = async (id_reclamo, id_cliente, contenido) => {
+const responderCliente = async (id_reclamo, id_cliente, contenido, imagen = null) => {
   if (!contenido || contenido.trim() === '') {
     throw new Error('El contenido no puede estar vacío');
   }
@@ -233,9 +224,8 @@ const responderCliente = async (id_reclamo, id_cliente, contenido) => {
     throw new Error('No se puede responder un reclamo ya resuelto');
   }
 
-  // Mensaje del cliente: id_usuario = NULL
   const id_mensaje = await insertarMensaje(
-    pool, contenido.trim(), new Date(), parseInt(id_reclamo), null
+    pool, contenido.trim(), new Date(), parseInt(id_reclamo), null, imagen
   );
 
   return { mensaje: 'Mensaje enviado con éxito', id_mensaje };

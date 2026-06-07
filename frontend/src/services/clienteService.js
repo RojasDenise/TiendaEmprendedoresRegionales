@@ -1,12 +1,6 @@
 const BASE_URL = 'http://localhost:5000/api';
 
 // ─── Facturas ─────────────────────────────────────────────────────────────────
-
-/**
- * Retorna las facturas del cliente con items, estado de envio,
- * flag de valoración por producto y flag de reclamo por factura.
- * @param {number} id_cliente
- */
 export const obtenerFacturas = async (id_cliente) => {
   const res = await fetch(`${BASE_URL}/facturas/cliente/${id_cliente}`);
   if (!res.ok) throw new Error('Error al obtener facturas');
@@ -14,21 +8,12 @@ export const obtenerFacturas = async (id_cliente) => {
 };
 
 // ─── Valoraciones ─────────────────────────────────────────────────────────────
-
-/**
- * Retorna valoraciones y promedio de un producto.
- * @param {number} id_producto
- */
 export const obtenerValoraciones = async (id_producto) => {
   const res = await fetch(`${BASE_URL}/valoraciones/producto/${id_producto}`);
   if (!res.ok) throw new Error('Error al obtener valoraciones');
   return res.json();
 };
 
-/**
- * Registra una valoracion del cliente sobre un producto.
- * @param {Object} datos - { id_factura, id_producto, id_cliente, puntaje, comentario }
- */
 export const agregarValoracion = async (datos) => {
   const res = await fetch(`${BASE_URL}/valoraciones`, {
     method: 'POST',
@@ -41,11 +26,6 @@ export const agregarValoracion = async (datos) => {
 };
 
 // ─── Reclamos ─────────────────────────────────────────────────────────────────
-
-/**
- * Retorna todos los reclamos del cliente.
- * @param {number} id_cliente
- */
 export const obtenerReclamos = async (id_cliente) => {
   const res = await fetch(`${BASE_URL}/reclamos/cliente/${id_cliente}`);
   if (!res.ok) throw new Error('Error al obtener reclamos');
@@ -54,13 +34,19 @@ export const obtenerReclamos = async (id_cliente) => {
 
 /**
  * Registra un reclamo vinculado a una factura.
- * @param {Object} datos - { id_factura, id_cliente, motivo, descripcion }
+ * @param {Object} datos - { id_factura, id_cliente, motivo, descripcion, imagen? }
  */
-export const agregarReclamo = async (datos) => {
+export const agregarReclamo = async ({ id_factura, id_cliente, motivo, descripcion, imagen = null }) => {
+  const formData = new FormData();
+  formData.append('id_factura',  id_factura);
+  formData.append('id_cliente',  id_cliente);
+  formData.append('motivo',      motivo);
+  formData.append('descripcion', descripcion);
+  if (imagen) formData.append('imagen', imagen);
+
   const res = await fetch(`${BASE_URL}/reclamos`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(datos),
+    body: formData,
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.message || 'Error al registrar reclamo');
@@ -73,11 +59,22 @@ export const obtenerMensajesReclamo = async (id_reclamo) => {
   return res.json();
 };
 
-export const responderReclamo = async (id_reclamo, id_cliente, contenido) => {
+/**
+ * Envía un mensaje del cliente en un reclamo existente.
+ * @param {number} id_reclamo
+ * @param {number} id_cliente
+ * @param {string} contenido
+ * @param {File|null} imagen
+ */
+export const responderReclamo = async (id_reclamo, id_cliente, contenido, imagen = null) => {
+  const formData = new FormData();
+  formData.append('id_cliente', id_cliente);
+  formData.append('contenido',  contenido || '📎 Imagen adjunta');
+  if (imagen) formData.append('imagen', imagen);
+
   const res = await fetch(`${BASE_URL}/reclamos/${id_reclamo}/responder-cliente`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id_cliente, contenido }),
+    body: formData,
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || 'Error al enviar mensaje');
