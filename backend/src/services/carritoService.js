@@ -90,12 +90,13 @@ const agregarAlCarrito = async ({ id_cliente, id_producto, cantidad }) => {
   let id_carrito;
 
   if (carritoResult.recordset.length === 0) {
+    // ← ÚNICA LÍNEA CAMBIADA: se agrega subTotal = 0
     const nuevoCarrito = await pool.request()
       .input('id_cliente', sql.Int, parseInt(id_cliente))
       .query(`
-        INSERT INTO Carrito (fecha_creacion, id_cliente)
+        INSERT INTO Carrito (fecha_creacion, subTotal, id_cliente)
         OUTPUT INSERTED.id_carrito
-        VALUES (GETDATE(), @id_cliente)
+        VALUES (GETDATE(), 0, @id_cliente)
       `);
     id_carrito = nuevoCarrito.recordset[0].id_carrito;
   } else {
@@ -178,25 +179,10 @@ const quitarDelCarrito = async (id_itemCarrito) => {
 /**
  * Confirma la compra en una transacción atómica.
  *
- * Flujo real de la BD:
- *  1. Obtener carrito del cliente y calcular total desde ItemCarrito
- *  2. INSERT Envio  (fecha_envio, fecha_entrega, id_estado_envio, id_tipo_envio)
- *  3. INSERT Pedido (fecha_pedido, id_estadoPedido, id_envio, id_cliente, id_direccion)
- *  4. INSERT Factura (fecha, total, id_pedido)
- *  5. INSERT Pago   (fecha, montoTotal, id_factura, id_formaPago, id_estadoPago)
- *  6. DELETE ItemCarrito — vaciar el carrito
- *
- * Valores fijos temporales:
- *  - id_direccion  = 1  (hasta implementar gestión de direcciones)
- *  - id_tipo_envio = 1
- *  - id_estadoPedido = 2
- *  - id_estadoPago   = 1 (Pendiente)
- *  - id_estado_envio = 1 (En Preparacion)
- *
  * @async
  * @param {Object} param
  * @param {number} param.id_cliente
- * @param {number} param.id_formaPago  - 1: Tarjeta de Débito | 2: Efectivo/Transferencia
+ * @param {number} param.id_formaPago
  * @returns {Promise<{message: string, id_factura: number}>}
  */
 const confirmarCompra = async ({ id_cliente, id_formaPago }) => {
@@ -206,7 +192,6 @@ const confirmarCompra = async ({ id_cliente, id_formaPago }) => {
   try {
     await transaction.begin();
 
-    // 1. Obtener carrito y calcular total
     const carritoResult = await new sql.Request(transaction)
       .input('id_cliente', sql.Int, parseInt(id_cliente))
       .query(`
@@ -236,7 +221,6 @@ const confirmarCompra = async ({ id_cliente, id_formaPago }) => {
       0
     );
 
-    // 2. INSERT Envio (id_estado_envio = 3 = Entregado)
     const envioResult = await new sql.Request(transaction)
       .query(`
         INSERT INTO Envio (fecha_envio, fecha_entrega, id_estado_envio, id_tipo_envio)
@@ -246,10 +230,9 @@ const confirmarCompra = async ({ id_cliente, id_formaPago }) => {
 
     const id_envio = envioResult.recordset[0].id_envio;
 
-    // 3. INSERT Pedido (id_direccion = 1 temporal)
     const pedidoResult = await new sql.Request(transaction)
-      .input('id_cliente',  sql.Int, parseInt(id_cliente))
-      .input('id_envio',    sql.Int, id_envio)
+      .input('id_cliente', sql.Int, parseInt(id_cliente))
+      .input('id_envio',   sql.Int, id_envio)
       .query(`
         INSERT INTO Pedido (fecha_pedido, id_estadoPedido, id_envio, id_cliente, id_direccion)
         OUTPUT INSERTED.id_pedido
@@ -258,7 +241,6 @@ const confirmarCompra = async ({ id_cliente, id_formaPago }) => {
 
     const id_pedido = pedidoResult.recordset[0].id_pedido;
 
-    // 4. INSERT Factura
     const facturaResult = await new sql.Request(transaction)
       .input('total',     sql.Float, total)
       .input('id_pedido', sql.Int,   id_pedido)
@@ -270,7 +252,6 @@ const confirmarCompra = async ({ id_cliente, id_formaPago }) => {
 
     const id_factura = facturaResult.recordset[0].id_factura;
 
-    // 5. INSERT DetalleFactura — uno por cada item del carrito
     for (const item of itemsResult.recordset) {
       await new sql.Request(transaction)
         .input('cantidad',        sql.Int,   item.cantidad)
@@ -284,7 +265,6 @@ const confirmarCompra = async ({ id_cliente, id_formaPago }) => {
         `);
     }
 
-    // 6. INSERT Pago
     await new sql.Request(transaction)
       .input('montoTotal',   sql.Float, total)
       .input('id_factura',   sql.Int,   id_factura)
@@ -294,7 +274,6 @@ const confirmarCompra = async ({ id_cliente, id_formaPago }) => {
         VALUES (GETDATE(), @montoTotal, @id_factura, @id_formaPago, 1)
       `);
 
-    // 7. Vaciar ItemCarrito
     await new sql.Request(transaction)
       .input('id_carrito', sql.Int, id_carrito)
       .query(`
@@ -304,10 +283,7 @@ const confirmarCompra = async ({ id_cliente, id_formaPago }) => {
 
     await transaction.commit();
 
-    return {
-      message: 'Compra realizada con éxito',
-      id_factura,
-    };
+    return { message: 'Compra realizada con éxito', id_factura };
 
   } catch (error) {
     await transaction.rollback();
