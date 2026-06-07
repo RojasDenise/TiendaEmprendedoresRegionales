@@ -209,6 +209,34 @@ CREATE TABLE Usuario (
   CONSTRAINT CK_Usuario_DNI CHECK (DNI BETWEEN 10000000 AND 99999999)
 );
 
+UPDATE Usuario
+SET contraseña = '$2b$10$lg14ZWzRxC3hHZrdUW66W.JpmmXb9On4VCN0Ap8u8NOvZnrggOk8K'
+WHERE email = 'admin@tienda.com';
+INSERT INTO Usuario (
+    apellidoNombre,
+    DNI,
+    fecha_nacimiento,
+    email,
+    contraseña,
+    reseña,
+    nombreEmprendimiento,
+    id_estado,
+    id_rol,
+    fecha_ultima_conexion
+)
+VALUES (
+    'Administrador General',
+    12345678,
+    '1990-01-01',
+    'admin@tienda.com',
+    '$2b$10$Dgxwji.1PHDk3GEKGR/Ef0OC2V9mJ5jpxbcVvpJwqNLHMXcAHCu4e',
+    NULL,
+    NULL,
+    1,
+    1,
+    GETDATE()
+);
+
 CREATE TABLE Ciudad (
   id_ciudad INT IDENTITY(1,1) NOT NULL,
   nombre VARCHAR(50) NOT NULL,
@@ -378,7 +406,7 @@ CREATE TABLE Valoración (
 --Procedimientos almacenados 
 
 CREATE OR ALTER PROCEDURE sp_obtenerProductos
-    @id_usuario INT
+    @id_usuario INT = NULL
 AS
 BEGIN
     SELECT
@@ -394,8 +422,8 @@ BEGIN
         ON p.id_estado_prod = ep.id_estado_prod
     LEFT JOIN Usuario u
         ON p.id_usuario = u.id_usuario
-    WHERE p.id_usuario = @id_usuario
-      AND p.id_estado_prod = 1
+    WHERE p.id_estado_prod = 1
+      AND (@id_usuario IS NULL OR p.id_usuario = @id_usuario)
     ORDER BY p.id_producto DESC;
 END;
 GO
@@ -508,3 +536,18 @@ GO
 ALTER TABLE Producto
 ALTER COLUMN imagen VARCHAR(MAX) NOT NULL;
 GO
+
+--modificacion de los estados de reclamo
+ALTER TABLE Estado_Reclamo
+DROP CONSTRAINT CK_EstadoReclamo;
+
+INSERT INTO Estado_Reclamo (descripcion)
+VALUES ('Respondido');
+
+ALTER TABLE Estado_Reclamo
+ADD CONSTRAINT CK_EstadoReclamo 
+CHECK (descripcion IN ('Pendiente', 'Respondido', 'Resuelto'));
+
+
+
+
