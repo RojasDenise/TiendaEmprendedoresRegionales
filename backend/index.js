@@ -16,6 +16,7 @@ const categoriaRoutes  = require('./src/routes/categoriaRoutes');
 const facturaRoutes    = require('./src/routes/facturaRoutes');
 const reclamoRoutes    = require('./src/routes/reclamoRoutes');
 const valoracionRoutes = require('./src/routes/valoracionRoutes');
+const carritoRoutes = require('./src/routes/carritoRoutes');
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use('/api/categorias',  categoriaRoutes);
 app.use('/api/facturas',    facturaRoutes);
 app.use('/api/reclamos',    reclamoRoutes);
 app.use('/api/valoraciones', valoracionRoutes);
+app.use('/api/carrito', carritoRoutes);
 
 // 5. Manejo de Rutas no Encontradas (404)
 app.use((req, res) => {
@@ -77,5 +79,6 @@ app.listen(PORT, async () => {
     console.log('  /api/facturas');
     console.log('  /api/reclamos');
     console.log('  /api/valoraciones');
+    console.log('  /api/carrito');
     console.log('==============================================');
 });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-
+import { useNavigate } from 'react-router-dom';
 /**
  * @fileoverview Componente del panel de administración de la plataforma.
  * Muestra métricas globales, tabla de productos, emprendedores activos
@@ -47,6 +47,16 @@ export default function DashboardAdmin() {
 
   const totalStock = productos.reduce((a, p) => a + Number(p.stock), 0);
   const stockBajo = productos.filter(p => Number(p.stock) < 5).length;
+
+  const navigate = useNavigate();
+
+useEffect(() => {
+  const user = JSON.parse(sessionStorage.getItem('user'));
+
+  if (!user || user.id_rol !== 1) {
+    navigate('/login', { replace: true });
+  }
+}, []);
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
