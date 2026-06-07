@@ -11,40 +11,29 @@ import { obtenerProductos, eliminarProducto } from '../../services/productoServi
  * @author Rojas Karen Denise; Sandoval María Victoria
  */
 
-/** URL base para construir las rutas de las imágenes de productos. */
 const IMG_URL = 'http://localhost:5000/uploads/';
 
-/**
- * Componente ListadoProductos.
- * Permite al emprendedor autenticado visualizar, buscar y eliminar sus productos.
- *
- * Comportamiento principal:
- * - Al montar el componente, obtiene el usuario autenticado desde `sessionStorage`.
- * - Carga los productos asociados al usuario mediante el servicio correspondiente.
- * - Permite filtrar productos por nombre en tiempo real mediante un campo de búsqueda.
- * - La eliminación requiere una confirmación inline antes de ejecutarse.
- * - Tras eliminar un producto, recarga el listado automáticamente.
- * - Muestra estados vacíos diferenciados: sin productos o sin resultados de búsqueda.
- *
- * @component
- * @returns {JSX.Element} Tabla de productos con topbar, buscador y acciones por fila.
- */
 export default function ListadoProductos() {
   const [productos, setProductos] = useState([]);
   const [busqueda, setBusqueda] = useState('');
   const [cargando, setCargando] = useState(true);
   const [confirmando, setConfirmando] = useState(null);
+  const [toast, setToast] = useState(null);
   const navigate = useNavigate();
 
-  /** Usuario autenticado leído desde sessionStorage. Null si no hay sesión activa. */
   const userRaw = sessionStorage.getItem('user');
   const user = userRaw ? JSON.parse(userRaw) : null;
 
   /**
-   * Carga los productos del emprendedor autenticado desde la API.
-   * Activa el estado de carga al inicio y lo desactiva al finalizar,
-   * independientemente de si la petición tuvo éxito o falló.
+   * Muestra un mensaje de feedback temporal que desaparece a los 3 segundos.
+   * @param {string} mensaje - Texto a mostrar.
+   * @param {'exito'|'error'} tipo - Tipo de notificación.
    */
+  const mostrarToast = (mensaje, tipo = 'exito') => {
+    setToast({ mensaje, tipo });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   const cargar = () => {
     setCargando(true);
     obtenerProductos(user?.id_usuario)
@@ -53,45 +42,52 @@ export default function ListadoProductos() {
       .finally(() => setCargando(false));
   };
 
-  /**
-   * Ejecuta la carga inicial de productos al montar el componente.
-   *
-   * @effect
-   */
   useEffect(() => { cargar(); }, []);
 
   /**
    * Elimina un producto por su ID tras la confirmación del usuario.
-   * Si la eliminación es exitosa, cierra el estado de confirmación y recarga el listado.
-   * Si falla, muestra un alert con el mensaje de error.
+   * Muestra toast de éxito o error según el resultado.
    *
    * @async
    * @param {number} id - ID del producto a eliminar.
-   * @returns {Promise<void>}
-   * @throws {Error} Si la petición al servicio falla, muestra el mensaje de error al usuario.
    */
   const handleEliminar = async (id) => {
     try {
       await eliminarProducto(id);
       setConfirmando(null);
       cargar();
+      mostrarToast('Producto eliminado con éxito');
     } catch (e) {
-      alert(e.message);
+      mostrarToast(e.message, 'error');
     }
   };
 
-  /**
-   * Lista de productos filtrados según el texto de búsqueda ingresado.
-   * La comparación es insensible a mayúsculas y minúsculas.
-   *
-   * @type {Array<Object>}
-   */
   const filtrados = productos.filter(p =>
     p.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          ...s.toast,
+          background: toast.tipo === 'error' ? '#FEE2E2' : '#DCFCE7',
+          color: toast.tipo === 'error' ? '#991B1B' : '#166534',
+          border: `0.5px solid ${toast.tipo === 'error' ? '#FECACA' : '#BBF7D0'}`,
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke={toast.tipo === 'error' ? '#991B1B' : '#166534'} strokeWidth="2.5">
+            {toast.tipo === 'error'
+              ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
+              : <polyline points="20 6 9 17 4 12"/>
+            }
+          </svg>
+          {toast.mensaje}
+        </div>
+      )}
+
       {/* Topbar */}
       <div style={s.topbar}>
         <div>
@@ -138,7 +134,6 @@ export default function ListadoProductos() {
             <tbody>
               {filtrados.map(p => (
                 <tr key={p.id_producto} style={s.tr}>
-                  {/* ✅ Imagen */}
                   <td style={s.td}>
                     {p.imagen ? (
                       <img
@@ -200,14 +195,12 @@ export default function ListadoProductos() {
   );
 }
 
-/**
- * Estilos en línea del componente ListadoProductos.
- * Se definen como objeto para mantener el estilo junto al componente
- * y evitar dependencias de archivos CSS externos.
- *
- * @type {Object}
- */
 const s = {
+  toast: {
+    display: 'flex', alignItems: 'center', gap: 8,
+    padding: '10px 16px', borderRadius: 8, fontSize: 13,
+    fontWeight: 500, marginBottom: '1rem',
+  },
   topbar: {
     display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
     marginBottom: '1.25rem',
