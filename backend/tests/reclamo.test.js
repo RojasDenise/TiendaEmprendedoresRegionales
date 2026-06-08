@@ -6,11 +6,16 @@ const crearReclamo = ({
   motivo,
   descripcion,
   estado_envio,
-  facturaPerteneceCliente,
-  yaExisteReclamo
+  facturaPerteneceCliente = true,
+  yaExisteReclamo = false,
+  facturaExiste = true
 }) => {
   if (!id_factura || !id_cliente || !motivo || !descripcion) {
     throw new Error('Faltan campos requeridos');
+  }
+
+  if (!facturaExiste) {
+    throw new Error('Factura no encontrada');
   }
 
   if (estado_envio !== 'Entregado') {
@@ -25,19 +30,22 @@ const crearReclamo = ({
     throw new Error('Ya existe un reclamo para esta compra');
   }
 
-  return {
-    mensaje: 'Reclamo registrado con éxito'
-  };
+  return { mensaje: 'Reclamo registrado con éxito' };
 };
 
 const responderReclamo = ({
   id_reclamo,
   id_usuario,
   contenido,
-  estado
+  estado,
+  reclamoExiste = true
 }) => {
   if (!id_reclamo || !id_usuario || !contenido) {
     throw new Error('Complete todos los campos');
+  }
+
+  if (!reclamoExiste) {
+    throw new Error('Reclamo no encontrado');
   }
 
   if (estado === 'Respondido') {
@@ -48,13 +56,15 @@ const responderReclamo = ({
     throw new Error('No se puede responder un reclamo que ya fue resuelto');
   }
 
-  return {
-    mensaje: 'Respuesta registrada con éxito'
-  };
+  return { mensaje: 'Respuesta registrada con éxito' };
 };
 
-const resolverReclamo = ({ id_reclamo, estado }) => {
-  if (!id_reclamo) {
+const resolverReclamo = ({
+  id_reclamo,
+  estado,
+  reclamoExiste = true
+}) => {
+  if (!id_reclamo || !reclamoExiste) {
     throw new Error('Reclamo no encontrado');
   }
 
@@ -62,198 +72,206 @@ const resolverReclamo = ({ id_reclamo, estado }) => {
     throw new Error('El reclamo ya se encuentra resuelto');
   }
 
-  return {
-    mensaje: 'El reclamo ha sido marcado como resuelto'
-  };
+  return { mensaje: 'El reclamo ha sido marcado como resuelto' };
 };
 
-describe('Reclamo', () => {
+describe('Pruebas unitarias - Reclamos', () => {
   describe('crearReclamo', () => {
-    it('acepta un reclamo válido', () => {
-      const reclamo = {
+    it('CR-C01 - debe crear un reclamo válido', () => {
+      expect(crearReclamo({
         id_factura: 7,
         id_cliente: 1,
         motivo: 'Producto defectuoso',
-        descripcion: 'El producto llegó roto.',
-        estado_envio: 'Entregado',
-        facturaPerteneceCliente: true,
-        yaExisteReclamo: false
-      };
-
-      expect(crearReclamo(reclamo)).toEqual({
-        mensaje: 'Reclamo registrado con éxito'
-      });
+        descripcion: 'Llegó roto',
+        estado_envio: 'Entregado'
+      })).toEqual({ mensaje: 'Reclamo registrado con éxito' });
     });
 
-    it('rechaza motivo vacío', () => {
-      const reclamo = {
+    it('CR-C02 - debe rechazar factura faltante', () => {
+      expect(() => crearReclamo({
+        id_factura: null,
+        id_cliente: 1,
+        motivo: 'Producto defectuoso',
+        descripcion: 'Llegó roto',
+        estado_envio: 'Entregado'
+      })).toThrow('Faltan campos requeridos');
+    });
+
+    it('CR-C03 - debe rechazar cliente faltante', () => {
+      expect(() => crearReclamo({
+        id_factura: 7,
+        id_cliente: null,
+        motivo: 'Producto defectuoso',
+        descripcion: 'Llegó roto',
+        estado_envio: 'Entregado'
+      })).toThrow('Faltan campos requeridos');
+    });
+
+    it('CR-C04 - debe rechazar motivo vacío', () => {
+      expect(() => crearReclamo({
         id_factura: 7,
         id_cliente: 1,
         motivo: '',
-        descripcion: 'El producto llegó roto.',
-        estado_envio: 'Entregado',
-        facturaPerteneceCliente: true,
-        yaExisteReclamo: false
-      };
-
-      expect(() => crearReclamo(reclamo))
-        .toThrow('Faltan campos requeridos');
+        descripcion: 'Llegó roto',
+        estado_envio: 'Entregado'
+      })).toThrow('Faltan campos requeridos');
     });
 
-    it('rechaza descripción vacía', () => {
-      const reclamo = {
+    it('CR-C05 - debe rechazar descripción vacía', () => {
+      expect(() => crearReclamo({
         id_factura: 7,
         id_cliente: 1,
         motivo: 'Producto defectuoso',
         descripcion: '',
-        estado_envio: 'Entregado',
-        facturaPerteneceCliente: true,
-        yaExisteReclamo: false
-      };
-
-      expect(() => crearReclamo(reclamo))
-        .toThrow('Faltan campos requeridos');
+        estado_envio: 'Entregado'
+      })).toThrow('Faltan campos requeridos');
     });
 
-    it('rechaza compra no entregada', () => {
-      const reclamo = {
-        id_factura: 2,
-        id_cliente: 1,
-        motivo: 'Producto defectuoso',
-        descripcion: 'El producto llegó roto.',
-        estado_envio: 'En Camino',
-        facturaPerteneceCliente: true,
-        yaExisteReclamo: false
-      };
-
-      expect(() => crearReclamo(reclamo))
-        .toThrow('Solo podés reclamar compras que ya fueron entregadas');
-    });
-
-    it('rechaza factura que no pertenece al cliente', () => {
-      const reclamo = {
-        id_factura: 9,
-        id_cliente: 1,
-        motivo: 'Producto defectuoso',
-        descripcion: 'El producto llegó roto.',
-        estado_envio: 'Entregado',
-        facturaPerteneceCliente: false,
-        yaExisteReclamo: false
-      };
-
-      expect(() => crearReclamo(reclamo))
-        .toThrow('No puede realizar reclamos sobre compras no realizadas por el cliente');
-    });
-
-    it('rechaza reclamo duplicado', () => {
-      const reclamo = {
+    it('CR-C06 - debe rechazar compra no entregada', () => {
+      expect(() => crearReclamo({
         id_factura: 7,
         id_cliente: 1,
         motivo: 'Producto defectuoso',
-        descripcion: 'El producto llegó roto.',
-        estado_envio: 'Entregado',
-        facturaPerteneceCliente: true,
-        yaExisteReclamo: true
-      };
+        descripcion: 'Llegó roto',
+        estado_envio: 'En camino'
+      })).toThrow('Solo podés reclamar compras que ya fueron entregadas');
+    });
 
-      expect(() => crearReclamo(reclamo))
-        .toThrow('Ya existe un reclamo para esta compra');
+    it('CR-C07 - debe rechazar factura que no pertenece al cliente', () => {
+      expect(() => crearReclamo({
+        id_factura: 7,
+        id_cliente: 1,
+        motivo: 'Producto defectuoso',
+        descripcion: 'Llegó roto',
+        estado_envio: 'Entregado',
+        facturaPerteneceCliente: false
+      })).toThrow('No puede realizar reclamos sobre compras no realizadas por el cliente');
+    });
+
+    it('CR-C08 - debe rechazar reclamo duplicado', () => {
+      expect(() => crearReclamo({
+        id_factura: 7,
+        id_cliente: 1,
+        motivo: 'Producto defectuoso',
+        descripcion: 'Llegó roto',
+        estado_envio: 'Entregado',
+        yaExisteReclamo: true
+      })).toThrow('Ya existe un reclamo para esta compra');
+    });
+
+    it('CR-C09 - debe rechazar factura inexistente', () => {
+      expect(() => crearReclamo({
+        id_factura: 99,
+        id_cliente: 1,
+        motivo: 'Producto defectuoso',
+        descripcion: 'Llegó roto',
+        estado_envio: 'Entregado',
+        facturaExiste: false
+      })).toThrow('Factura no encontrada');
     });
   });
 
   describe('responderReclamo', () => {
-    it('acepta respuesta válida', () => {
-      const respuesta = {
+    it('CR-R01 - debe responder un reclamo válido', () => {
+      expect(responderReclamo({
         id_reclamo: 6,
         id_usuario: 8,
-        contenido: 'Lamentamos el inconveniente. Nos comunicaremos para solucionar el problema.',
+        contenido: 'Se revisará el caso',
         estado: 'Pendiente'
-      };
-
-      expect(responderReclamo(respuesta)).toEqual({
-        mensaje: 'Respuesta registrada con éxito'
-      });
+      })).toEqual({ mensaje: 'Respuesta registrada con éxito' });
     });
 
-    it('rechaza respuesta vacía', () => {
-      const respuesta = {
+    it('CR-R02 - debe rechazar reclamo faltante', () => {
+      expect(() => responderReclamo({
+        id_reclamo: null,
+        id_usuario: 8,
+        contenido: 'Respuesta',
+        estado: 'Pendiente'
+      })).toThrow('Complete todos los campos');
+    });
+
+    it('CR-R03 - debe rechazar usuario faltante', () => {
+      expect(() => responderReclamo({
+        id_reclamo: 6,
+        id_usuario: null,
+        contenido: 'Respuesta',
+        estado: 'Pendiente'
+      })).toThrow('Complete todos los campos');
+    });
+
+    it('CR-R04 - debe rechazar contenido vacío', () => {
+      expect(() => responderReclamo({
         id_reclamo: 6,
         id_usuario: 8,
         contenido: '',
         estado: 'Pendiente'
-      };
-
-      expect(() => responderReclamo(respuesta))
-        .toThrow('Complete todos los campos');
+      })).toThrow('Complete todos los campos');
     });
 
-    it('rechaza reclamo inexistente', () => {
-      const respuesta = {
-        id_reclamo: null,
-        id_usuario: 8,
-        contenido: 'Respuesta válida',
-        estado: 'Pendiente'
-      };
-
-      expect(() => responderReclamo(respuesta))
-        .toThrow('Complete todos los campos');
-    });
-
-    it('rechaza reclamo ya respondido', () => {
-      const respuesta = {
+    it('CR-R05 - debe rechazar reclamo ya respondido', () => {
+      expect(() => responderReclamo({
         id_reclamo: 6,
         id_usuario: 8,
-        contenido: 'Se procederá al reemplazo.',
+        contenido: 'Respuesta',
         estado: 'Respondido'
-      };
-
-      expect(() => responderReclamo(respuesta))
-        .toThrow('El reclamo ya fue respondido');
+      })).toThrow('El reclamo ya fue respondido');
     });
 
-    it('rechaza reclamo resuelto', () => {
-      const respuesta = {
-        id_reclamo: 7,
+    it('CR-R06 - debe rechazar reclamo resuelto', () => {
+      expect(() => responderReclamo({
+        id_reclamo: 6,
         id_usuario: 8,
-        contenido: 'Se procederá al reemplazo.',
+        contenido: 'Respuesta',
         estado: 'Resuelto'
-      };
+      })).toThrow('No se puede responder un reclamo que ya fue resuelto');
+    });
 
-      expect(() => responderReclamo(respuesta))
-        .toThrow('No se puede responder un reclamo que ya fue resuelto');
+    it('CR-R07 - debe rechazar reclamo inexistente', () => {
+      expect(() => responderReclamo({
+        id_reclamo: 99,
+        id_usuario: 8,
+        contenido: 'Respuesta',
+        estado: 'Pendiente',
+        reclamoExiste: false
+      })).toThrow('Reclamo no encontrado');
     });
   });
 
   describe('resolverReclamo', () => {
-    it('resuelve un reclamo pendiente', () => {
-      const reclamo = {
+    it('CR-S01 - debe resolver un reclamo pendiente', () => {
+      expect(resolverReclamo({
         id_reclamo: 6,
         estado: 'Pendiente'
-      };
-
-      expect(resolverReclamo(reclamo)).toEqual({
-        mensaje: 'El reclamo ha sido marcado como resuelto'
-      });
+      })).toEqual({ mensaje: 'El reclamo ha sido marcado como resuelto' });
     });
 
-    it('rechaza resolver un reclamo inexistente', () => {
-      const reclamo = {
+    it('CR-S02 - debe rechazar reclamo faltante', () => {
+      expect(() => resolverReclamo({
         id_reclamo: null,
         estado: 'Pendiente'
-      };
-
-      expect(() => resolverReclamo(reclamo))
-        .toThrow('Reclamo no encontrado');
+      })).toThrow('Reclamo no encontrado');
     });
 
-    it('rechaza resolver un reclamo ya resuelto', () => {
-      const reclamo = {
+    it('CR-S03 - debe rechazar reclamo inexistente', () => {
+      expect(() => resolverReclamo({
+        id_reclamo: 99,
+        estado: 'Pendiente',
+        reclamoExiste: false
+      })).toThrow('Reclamo no encontrado');
+    });
+
+    it('CR-S04 - debe rechazar reclamo ya resuelto', () => {
+      expect(() => resolverReclamo({
         id_reclamo: 7,
         estado: 'Resuelto'
-      };
+      })).toThrow('El reclamo ya se encuentra resuelto');
+    });
 
-      expect(() => resolverReclamo(reclamo))
-        .toThrow('El reclamo ya se encuentra resuelto');
+    it('CR-S05 - debe resolver reclamo respondido', () => {
+      expect(resolverReclamo({
+        id_reclamo: 8,
+        estado: 'Respondido'
+      })).toEqual({ mensaje: 'El reclamo ha sido marcado como resuelto' });
     });
   });
 });

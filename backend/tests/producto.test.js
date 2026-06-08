@@ -17,7 +17,7 @@ const crearProducto = (producto) => {
     return { ok: false, mensaje: 'El stock no puede ser negativo' };
   }
 
-  if (!producto.id_categoria) {
+  if (!producto.id_categoria || producto.id_categoria <= 0) {
     return { ok: false, mensaje: 'La categoría es obligatoria' };
   }
 
@@ -25,143 +25,316 @@ const crearProducto = (producto) => {
 };
 
 const actualizarProducto = (producto) => {
-  return crearProducto(producto);
+  if (!producto.id_producto || producto.id_producto <= 0) {
+    return { ok: false, mensaje: 'Debe seleccionar un producto' };
+  }
+
+  if (producto.productoExiste === false) {
+    return { ok: false, mensaje: 'Producto no encontrado' };
+  }
+
+  const validacion = crearProducto(producto);
+
+  if (!validacion.ok) {
+    return validacion;
+  }
+
+  return { ok: true, mensaje: 'Producto actualizado correctamente' };
 };
 
-const eliminarProducto = (id_producto) => {
-  if (!id_producto) {
+const eliminarProducto = ({
+  id_producto,
+  productoExiste = true,
+  tieneVentasAsociadas = false,
+  tieneCarritoAsociado = false
+}) => {
+  if (!id_producto || id_producto <= 0) {
     return { ok: false, mensaje: 'Debe seleccionar un producto' };
+  }
+
+  if (!productoExiste) {
+    return { ok: false, mensaje: 'Producto no encontrado' };
+  }
+
+  if (tieneVentasAsociadas) {
+    return {
+      ok: false,
+      mensaje: 'No se puede eliminar un producto asociado a una venta'
+    };
+  }
+
+  if (tieneCarritoAsociado) {
+    return {
+      ok: false,
+      mensaje: 'No se puede eliminar un producto agregado a un carrito activo'
+    };
   }
 
   return { ok: true, mensaje: 'Producto eliminado correctamente' };
 };
 
-const obtenerProductos = (productos) => {
-  return Array.isArray(productos);
-};
-
 describe('Pruebas unitarias - CRUD Producto', () => {
   describe('crearProducto', () => {
-    it('debe aceptar un producto con datos válidos', () => {
-      const producto = {
-        nombre: 'Mate de vidrio',
+    it('CP-C01 - debe aceptar un producto con datos válidos', () => {
+      expect(crearProducto({
+        nombre: 'Mate',
         descripcion: 'Mate artesanal',
         precio: 15000,
         stock: 4,
         id_categoria: 2
-      };
-
-      expect(crearProducto(producto)).toEqual({
-        ok: true,
-        mensaje: 'Producto válido'
-      });
+      })).toEqual({ ok: true, mensaje: 'Producto válido' });
     });
 
-    it('debe rechazar un producto sin nombre', () => {
-      const producto = {
+    it('CP-C02 - debe rechazar nombre vacío', () => {
+      expect(crearProducto({
         nombre: '',
         descripcion: 'Mate artesanal',
         precio: 15000,
         stock: 4,
         id_categoria: 2
-      };
-
-      expect(crearProducto(producto).ok).toBe(false);
+      }).mensaje).toBe('El nombre es obligatorio');
     });
 
-    it('debe rechazar descripción vacía', () => {
-      const producto = {
+    it('CP-C03 - debe rechazar nombre nulo', () => {
+      expect(crearProducto({
+        nombre: null,
+        descripcion: 'Mate artesanal',
+        precio: 15000,
+        stock: 4,
+        id_categoria: 2
+      }).mensaje).toBe('El nombre es obligatorio');
+    });
+
+    it('CP-C04 - debe rechazar descripción vacía', () => {
+      expect(crearProducto({
         nombre: 'Mate',
         descripcion: '',
         precio: 15000,
         stock: 4,
         id_categoria: 2
-      };
-
-      expect(crearProducto(producto).ok).toBe(false);
+      }).mensaje).toBe('La descripción es obligatoria');
     });
 
-    it('debe rechazar un producto con precio inválido', () => {
-      const producto = {
+    it('CP-C05 - debe rechazar descripción nula', () => {
+      expect(crearProducto({
+        nombre: 'Mate',
+        descripcion: null,
+        precio: 15000,
+        stock: 4,
+        id_categoria: 2
+      }).mensaje).toBe('La descripción es obligatoria');
+    });
+
+    it('CP-C06 - debe rechazar precio igual a cero', () => {
+      expect(crearProducto({
         nombre: 'Mate',
         descripcion: 'Mate artesanal',
         precio: 0,
         stock: 4,
         id_categoria: 2
-      };
-
-      expect(crearProducto(producto).ok).toBe(false);
+      }).mensaje).toBe('El precio debe ser mayor a 0');
     });
 
-    it('debe rechazar stock negativo', () => {
-      const producto = {
+    it('CP-C07 - debe rechazar precio negativo', () => {
+      expect(crearProducto({
+        nombre: 'Mate',
+        descripcion: 'Mate artesanal',
+        precio: -100,
+        stock: 4,
+        id_categoria: 2
+      }).mensaje).toBe('El precio debe ser mayor a 0');
+    });
+
+    it('CP-C08 - debe rechazar precio nulo', () => {
+      expect(crearProducto({
+        nombre: 'Mate',
+        descripcion: 'Mate artesanal',
+        precio: null,
+        stock: 4,
+        id_categoria: 2
+      }).mensaje).toBe('El precio debe ser mayor a 0');
+    });
+
+    it('CP-C09 - debe rechazar stock negativo', () => {
+      expect(crearProducto({
         nombre: 'Mate',
         descripcion: 'Mate artesanal',
         precio: 15000,
         stock: -1,
         id_categoria: 2
-      };
-
-      expect(crearProducto(producto).ok).toBe(false);
+      }).mensaje).toBe('El stock no puede ser negativo');
     });
 
-    it('debe aceptar stock igual a cero', () => {
-      const producto = {
+    it('CP-C10 - debe aceptar stock igual a cero', () => {
+      expect(crearProducto({
         nombre: 'Mate',
         descripcion: 'Mate artesanal',
         precio: 15000,
         stock: 0,
         id_categoria: 2
-      };
-
-      expect(crearProducto(producto).ok).toBe(true);
+      }).ok).toBe(true);
     });
 
-    it('debe rechazar categoría vacía', () => {
-      const producto = {
+    it('CP-C11 - debe rechazar categoría nula', () => {
+      expect(crearProducto({
         nombre: 'Mate',
         descripcion: 'Mate artesanal',
         precio: 15000,
         stock: 4,
         id_categoria: null
-      };
+      }).mensaje).toBe('La categoría es obligatoria');
+    });
 
-      expect(crearProducto(producto).ok).toBe(false);
+    it('CP-C12 - debe rechazar categoría inválida', () => {
+      expect(crearProducto({
+        nombre: 'Mate',
+        descripcion: 'Mate artesanal',
+        precio: 15000,
+        stock: 4,
+        id_categoria: 0
+      }).mensaje).toBe('La categoría es obligatoria');
     });
   });
 
   describe('actualizarProducto', () => {
-    it('debe aceptar la actualización de un producto válido', () => {
-      const producto = {
+    it('CP-U01 - debe actualizar un producto válido', () => {
+      expect(actualizarProducto({
+        id_producto: 1,
         nombre: 'Mate actualizado',
-        descripcion: 'Actualizado desde prueba',
+        descripcion: 'Actualizado',
         precio: 18000,
         stock: 5,
         id_categoria: 2
-      };
+      })).toEqual({ ok: true, mensaje: 'Producto actualizado correctamente' });
+    });
 
-      expect(actualizarProducto(producto).ok).toBe(true);
+    it('CP-U02 - debe rechazar producto no seleccionado', () => {
+      expect(actualizarProducto({ id_producto: null }).mensaje)
+        .toBe('Debe seleccionar un producto');
+    });
+
+    it('CP-U03 - debe rechazar producto inexistente', () => {
+      expect(actualizarProducto({
+        id_producto: 99,
+        productoExiste: false
+      }).mensaje).toBe('Producto no encontrado');
+    });
+
+    it('CP-U04 - debe rechazar nombre vacío al editar', () => {
+      expect(actualizarProducto({
+        id_producto: 1,
+        nombre: '',
+        descripcion: 'Actualizado',
+        precio: 18000,
+        stock: 5,
+        id_categoria: 2
+      }).mensaje).toBe('El nombre es obligatorio');
+    });
+
+    it('CP-U05 - debe rechazar descripción vacía al editar', () => {
+      expect(actualizarProducto({
+        id_producto: 1,
+        nombre: 'Mate',
+        descripcion: '',
+        precio: 18000,
+        stock: 5,
+        id_categoria: 2
+      }).mensaje).toBe('La descripción es obligatoria');
+    });
+
+    it('CP-U06 - debe rechazar precio igual a cero al editar', () => {
+      expect(actualizarProducto({
+        id_producto: 1,
+        nombre: 'Mate',
+        descripcion: 'Actualizado',
+        precio: 0,
+        stock: 5,
+        id_categoria: 2
+      }).mensaje).toBe('El precio debe ser mayor a 0');
+    });
+
+    it('CP-U07 - debe rechazar precio negativo al editar', () => {
+      expect(actualizarProducto({
+        id_producto: 1,
+        nombre: 'Mate',
+        descripcion: 'Actualizado',
+        precio: -100,
+        stock: 5,
+        id_categoria: 2
+      }).mensaje).toBe('El precio debe ser mayor a 0');
+    });
+
+    it('CP-U08 - debe rechazar stock negativo al editar', () => {
+      expect(actualizarProducto({
+        id_producto: 1,
+        nombre: 'Mate',
+        descripcion: 'Actualizado',
+        precio: 18000,
+        stock: -1,
+        id_categoria: 2
+      }).mensaje).toBe('El stock no puede ser negativo');
+    });
+
+    it('CP-U09 - debe permitir editar producto dejando stock en cero', () => {
+      expect(actualizarProducto({
+        id_producto: 1,
+        nombre: 'Mate',
+        descripcion: 'Actualizado',
+        precio: 18000,
+        stock: 0,
+        id_categoria: 2
+      }).ok).toBe(true);
+    });
+
+    it('CP-U10 - debe rechazar categoría faltante al editar', () => {
+      expect(actualizarProducto({
+        id_producto: 1,
+        nombre: 'Mate',
+        descripcion: 'Actualizado',
+        precio: 18000,
+        stock: 5,
+        id_categoria: null
+      }).mensaje).toBe('La categoría es obligatoria');
     });
   });
 
   describe('eliminarProducto', () => {
-    it('debe permitir eliminar si existe id_producto', () => {
-      expect(eliminarProducto(1).ok).toBe(true);
+    it('CP-D01 - debe eliminar producto existente', () => {
+      expect(eliminarProducto({ id_producto: 1 })).toEqual({
+        ok: true,
+        mensaje: 'Producto eliminado correctamente'
+      });
     });
 
-    it('debe rechazar eliminar sin id_producto', () => {
-      expect(eliminarProducto(null).ok).toBe(false);
+    it('CP-D02 - debe rechazar eliminar sin seleccionar producto', () => {
+      expect(eliminarProducto({ id_producto: null }).mensaje)
+        .toBe('Debe seleccionar un producto');
     });
-  });
 
-  describe('obtenerProductos', () => {
-    it('debe devolver una lista de productos', () => {
-      const productos = [
-        { id_producto: 1, nombre: 'Mate' },
-        { id_producto: 2, nombre: 'Bombilla' }
-      ];
+    it('CP-D03 - debe rechazar ID inválido', () => {
+      expect(eliminarProducto({ id_producto: 0 }).mensaje)
+        .toBe('Debe seleccionar un producto');
+    });
 
-      expect(obtenerProductos(productos)).toBe(true);
+    it('CP-D04 - debe rechazar producto inexistente', () => {
+      expect(eliminarProducto({
+        id_producto: 99,
+        productoExiste: false
+      }).mensaje).toBe('Producto no encontrado');
+    });
+
+    it('CP-D05 - debe rechazar producto con ventas asociadas', () => {
+      expect(eliminarProducto({
+        id_producto: 1,
+        tieneVentasAsociadas: true
+      }).mensaje).toBe('No se puede eliminar un producto asociado a una venta');
+    });
+
+    it('CP-D06 - debe rechazar producto agregado a carrito activo', () => {
+      expect(eliminarProducto({
+        id_producto: 1,
+        tieneCarritoAsociado: true
+      }).mensaje).toBe('No se puede eliminar un producto agregado a un carrito activo');
     });
   });
 });

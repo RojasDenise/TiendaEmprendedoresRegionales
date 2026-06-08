@@ -30,9 +30,7 @@ const agregarValoracion = ({
     throw new Error('Ya valoraste este producto para esta compra');
   }
 
-  return {
-    mensaje: 'Valoración registrada con éxito'
-  };
+  return { mensaje: 'Valoración registrada con éxito' };
 };
 
 const obtenerValoracionesPorProducto = (valoraciones) => {
@@ -57,147 +55,137 @@ const obtenerValoracionesPorProducto = (valoraciones) => {
   };
 };
 
-describe('Valoración', () => {
+describe('Pruebas unitarias - Valoraciones', () => {
   describe('agregarValoracion', () => {
-    it('acepta una valoración válida', () => {
-      const valoracion = {
+    it('CV-C01 - debe crear una valoración válida', () => {
+      expect(agregarValoracion({
         id_factura: 7,
         id_producto: 1,
         id_cliente: 1,
         puntaje: 5,
-        comentario: 'Excelente producto.',
+        comentario: 'Excelente',
         compraValida: true,
         yaValorado: false
-      };
-
-      expect(agregarValoracion(valoracion)).toEqual({
-        mensaje: 'Valoración registrada con éxito'
-      });
+      })).toEqual({ mensaje: 'Valoración registrada con éxito' });
     });
 
-    it('rechaza puntaje mayor a 5', () => {
-      const valoracion = {
-        id_factura: 7,
-        id_producto: 1,
-        id_cliente: 1,
-        puntaje: 7,
-        comentario: 'Buen producto.',
-        compraValida: true,
-        yaValorado: false
-      };
-
-      expect(() => agregarValoracion(valoracion))
-        .toThrow('El puntaje debe estar entre 1 y 5');
-    });
-
-    it('rechaza puntaje menor a 1', () => {
-      const valoracion = {
-        id_factura: 7,
-        id_producto: 1,
-        id_cliente: 1,
-        puntaje: 0,
-        comentario: 'Buen producto.',
-        compraValida: true,
-        yaValorado: false
-      };
-
-      expect(() => agregarValoracion(valoracion))
-        .toThrow('El puntaje debe estar entre 1 y 5');
-    });
-
-    it('rechaza producto no comprado por el cliente', () => {
-      const valoracion = {
-        id_factura: 7,
-        id_producto: 3,
-        id_cliente: 1,
-        puntaje: 4,
-        comentario: 'Buen producto.',
-        compraValida: false,
-        yaValorado: false
-      };
-
-      expect(() => agregarValoracion(valoracion))
-        .toThrow('No puede valorar productos que no compró');
-    });
-
-    it('rechaza valoración duplicada', () => {
-      const valoracion = {
-        id_factura: 7,
-        id_producto: 1,
-        id_cliente: 1,
-        puntaje: 5,
-        comentario: 'Excelente producto.',
-        compraValida: true,
-        yaValorado: true
-      };
-
-      expect(() => agregarValoracion(valoracion))
-        .toThrow('Ya valoraste este producto para esta compra');
-    });
-
-    it('rechaza factura faltante', () => {
-      const valoracion = {
+    it('CV-C02 - debe rechazar factura faltante', () => {
+      expect(() => agregarValoracion({
         id_factura: null,
         id_producto: 1,
         id_cliente: 1,
         puntaje: 5,
         compraValida: true,
         yaValorado: false
-      };
-
-      expect(() => agregarValoracion(valoracion))
-        .toThrow('Faltan campos requeridos');
+      })).toThrow('Faltan campos requeridos');
     });
 
-    it('rechaza producto faltante', () => {
-      const valoracion = {
+    it('CV-C03 - debe rechazar producto faltante', () => {
+      expect(() => agregarValoracion({
         id_factura: 7,
         id_producto: null,
         id_cliente: 1,
         puntaje: 5,
         compraValida: true,
         yaValorado: false
-      };
-
-      expect(() => agregarValoracion(valoracion))
-        .toThrow('Faltan campos requeridos');
+      })).toThrow('Faltan campos requeridos');
     });
 
-    it('rechaza cliente faltante', () => {
-      const valoracion = {
+    it('CV-C04 - debe rechazar cliente faltante', () => {
+      expect(() => agregarValoracion({
         id_factura: 7,
         id_producto: 1,
         id_cliente: null,
         puntaje: 5,
         compraValida: true,
         yaValorado: false
-      };
-
-      expect(() => agregarValoracion(valoracion))
-        .toThrow('Faltan campos requeridos');
+      })).toThrow('Faltan campos requeridos');
     });
 
-    it('rechaza puntaje faltante', () => {
-      const valoracion = {
+    it('CV-C05 - debe rechazar puntaje faltante', () => {
+      expect(() => agregarValoracion({
         id_factura: 7,
         id_producto: 1,
         id_cliente: 1,
         puntaje: null,
         compraValida: true,
         yaValorado: false
-      };
+      })).toThrow('Faltan campos requeridos');
+    });
 
-      expect(() => agregarValoracion(valoracion))
-        .toThrow('Faltan campos requeridos');
+    it('CV-C06 - debe rechazar puntaje menor al mínimo', () => {
+      expect(() => agregarValoracion({
+        id_factura: 7,
+        id_producto: 1,
+        id_cliente: 1,
+        puntaje: 0,
+        compraValida: true,
+        yaValorado: false
+      })).toThrow('El puntaje debe estar entre 1 y 5');
+    });
+
+    it('CV-C07 - debe rechazar puntaje mayor al máximo', () => {
+      expect(() => agregarValoracion({
+        id_factura: 7,
+        id_producto: 1,
+        id_cliente: 1,
+        puntaje: 6,
+        compraValida: true,
+        yaValorado: false
+      })).toThrow('El puntaje debe estar entre 1 y 5');
+    });
+
+    it('CV-C08 - debe aceptar puntaje mínimo válido', () => {
+      expect(agregarValoracion({
+        id_factura: 7,
+        id_producto: 1,
+        id_cliente: 1,
+        puntaje: 1,
+        compraValida: true,
+        yaValorado: false
+      })).toEqual({ mensaje: 'Valoración registrada con éxito' });
+    });
+
+    it('CV-C09 - debe aceptar puntaje máximo válido', () => {
+      expect(agregarValoracion({
+        id_factura: 7,
+        id_producto: 1,
+        id_cliente: 1,
+        puntaje: 5,
+        compraValida: true,
+        yaValorado: false
+      })).toEqual({ mensaje: 'Valoración registrada con éxito' });
+    });
+
+    it('CV-C10 - debe rechazar producto no comprado por el cliente', () => {
+      expect(() => agregarValoracion({
+        id_factura: 7,
+        id_producto: 1,
+        id_cliente: 1,
+        puntaje: 4,
+        compraValida: false,
+        yaValorado: false
+      })).toThrow('No puede valorar productos que no compró');
+    });
+
+    it('CV-C11 - debe rechazar valoración duplicada', () => {
+      expect(() => agregarValoracion({
+        id_factura: 7,
+        id_producto: 1,
+        id_cliente: 1,
+        puntaje: 5,
+        compraValida: true,
+        yaValorado: true
+      })).toThrow('Ya valoraste este producto para esta compra');
     });
   });
 
   describe('obtenerValoracionesPorProducto', () => {
-    it('calcula promedio y total de valoraciones', () => {
+    it('CV-O01 - debe calcular promedio con varias valoraciones', () => {
       const valoraciones = [
-        { puntaje: 5, comentario: 'Excelente' },
-        { puntaje: 4, comentario: 'Muy bueno' },
-        { puntaje: 3, comentario: 'Bueno' }
+        { puntaje: 5 },
+        { puntaje: 4 },
+        { puntaje: 3 }
       ];
 
       expect(obtenerValoracionesPorProducto(valoraciones)).toEqual({
@@ -207,7 +195,7 @@ describe('Valoración', () => {
       });
     });
 
-    it('devuelve promedio 0 si no hay valoraciones', () => {
+    it('CV-O02 - debe devolver promedio cero si no hay valoraciones', () => {
       expect(obtenerValoracionesPorProducto([])).toEqual({
         promedio: 0,
         total: 0,
@@ -215,15 +203,34 @@ describe('Valoración', () => {
       });
     });
 
-    it('calcula correctamente promedio decimal', () => {
+    it('CV-O03 - debe calcular promedio decimal', () => {
       const valoraciones = [
         { puntaje: 5 },
         { puntaje: 5 },
         { puntaje: 4 }
       ];
 
-      expect(obtenerValoracionesPorProducto(valoraciones).promedio)
-        .toBe(4.7);
+      expect(obtenerValoracionesPorProducto(valoraciones).promedio).toBe(4.7);
+    });
+
+    it('CV-O04 - debe calcular promedio con una valoración mínima', () => {
+      const valoraciones = [{ puntaje: 1 }];
+
+      expect(obtenerValoracionesPorProducto(valoraciones)).toEqual({
+        promedio: 1,
+        total: 1,
+        valoraciones
+      });
+    });
+
+    it('CV-O05 - debe calcular promedio con una valoración máxima', () => {
+      const valoraciones = [{ puntaje: 5 }];
+
+      expect(obtenerValoracionesPorProducto(valoraciones)).toEqual({
+        promedio: 5,
+        total: 1,
+        valoraciones
+      });
     });
   });
 });

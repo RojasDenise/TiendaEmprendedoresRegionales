@@ -90,7 +90,6 @@ const agregarAlCarrito = async ({ id_cliente, id_producto, cantidad }) => {
   let id_carrito;
 
   if (carritoResult.recordset.length === 0) {
-    // ← ÚNICA LÍNEA CAMBIADA: se agrega subTotal = 0
     const nuevoCarrito = await pool.request()
       .input('id_cliente', sql.Int, parseInt(id_cliente))
       .query(`
@@ -271,7 +270,7 @@ const confirmarCompra = async ({ id_cliente, id_formaPago }) => {
       .input('id_formaPago', sql.Int,   parseInt(id_formaPago))
       .query(`
         INSERT INTO Pago (fecha, montoTotal, id_factura, id_formaPago, id_estadoPago)
-        VALUES (GETDATE(), @montoTotal, @id_factura, @id_formaPago, 1)
+        VALUES (GETDATE(), @montoTotal, @id_factura, @id_formaPago, 2)
       `);
 
     await new sql.Request(transaction)
