@@ -403,40 +403,50 @@ CREATE TABLE Valoración (
 );
 
 
---Procedimientos almacenados 
+-- =============================================
+-- Procedimientos almacenados
+-- =============================================
 
-CREATE OR ALTER PROCEDURE sp_obtenerProductos
+-- 1. Consulta de productos
+DROP PROCEDURE IF EXISTS sp_obtenerProductos;
+GO
+CREATE PROCEDURE sp_obtenerProductos
     @id_usuario INT = NULL
 AS
 BEGIN
-    SELECT
-        p.*,
-        c.descripcion AS categoria_nombre,
-        ep.descripcion AS estado_nombre,
-        u.apellidoNombre AS nombre_usuario,
+    SET NOCOUNT ON;
+    SELECT 
+        p.id_producto,
+        p.nombre,
+        p.descripcion,
+        p.precio,
+        p.stock,
+        p.imagen,
+        p.id_categoria,
+        p.id_usuario,
+        p.id_estado_prod,
+        c.descripcion        AS categoria_nombre,
+        u.apellidoNombre     AS nombre_usuario,
         u.nombreEmprendimiento
     FROM Producto p
-    INNER JOIN Categoria c
-        ON p.id_categoria = c.id_categoria
-    INNER JOIN Estado_Producto ep
-        ON p.id_estado_prod = ep.id_estado_prod
-    LEFT JOIN Usuario u
-        ON p.id_usuario = u.id_usuario
+    JOIN Categoria c  ON p.id_categoria = c.id_categoria
+    LEFT JOIN Usuario u ON p.id_usuario  = u.id_usuario
     WHERE p.id_estado_prod = 1
-      AND (@id_usuario IS NULL OR p.id_usuario = @id_usuario)
-    ORDER BY p.id_producto DESC;
+      AND (@id_usuario IS NULL OR p.id_usuario = @id_usuario);
 END;
 GO
 
---Actualización
-CREATE OR ALTER PROCEDURE sp_actualizarProducto
+-- 2. Actualización de producto
+DROP PROCEDURE IF EXISTS sp_actualizarProducto;
+GO
+CREATE PROCEDURE sp_actualizarProducto
     @id_producto INT,
-    @nombre VARCHAR(50),
+    @nombre VARCHAR(200),
     @descripcion VARCHAR(MAX),
     @precio DECIMAL(10,2),
     @stock INT,
     @id_categoria INT,
-    @imagen VARCHAR(MAX) = NULL
+    @imagen VARCHAR(255) = NULL
 AS
 BEGIN
     UPDATE Producto
@@ -453,12 +463,11 @@ BEGIN
     WHERE id_producto = @id_producto;
 END;
 GO
---Verifacamos que se creo el procedimiento
 
-EXEC sp_helptext 'sp_actualizarProducto';
 -- =============================================
--- 5. Implementación de un trigger luego de que se ejecute pago, en el descuento de stock del producto
+-- 3. Trigger: actualización de stock y estado
 -- =============================================
+DROP TRIGGER IF EXISTS tr_ActualizarStockYEstado;
 GO
 CREATE TRIGGER tr_ActualizarStockYEstado
 ON Pago
@@ -466,19 +475,26 @@ AFTER INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
-    IF EXISTS (SELECT 1 FROM inserted i 
-               INNER JOIN EstadoPago ep ON i.id_estadoPago = ep.id_estadoPago 
-               WHERE ep.descripcion = 'Aprobado')
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        INNER JOIN EstadoPago ep ON i.id_estadoPago = ep.id_estadoPago
+        WHERE ep.descripcion = 'Aprobado'
+    )
     BEGIN
         UPDATE p
         SET p.stock = p.stock - df.cantidad
         FROM Producto p
         INNER JOIN DetalleFactura df ON p.id_producto = df.id_producto
         INNER JOIN inserted i ON df.id_factura = i.id_factura
-        WHERE i.id_estadoPago = (SELECT id_estadoPago FROM EstadoPago WHERE descripcion = 'Aprobado');
+        WHERE i.id_estadoPago = (
+            SELECT id_estadoPago FROM EstadoPago WHERE descripcion = 'Aprobado'
+        );
 
-        UPDATE Producto 
-        SET id_estado_prod = (SELECT id_estado_prod FROM Estado_Producto WHERE descripcion = 'Sin Stock')
+        UPDATE Producto
+        SET id_estado_prod = (
+            SELECT id_estado_prod FROM Estado_Producto WHERE descripcion = 'Sin Stock'
+        )
         WHERE stock = 0;
     END
 END;
