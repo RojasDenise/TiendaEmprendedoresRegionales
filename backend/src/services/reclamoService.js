@@ -175,56 +175,121 @@ const resolverReclamo = async (id_reclamo) => {
   return { mensaje: 'El reclamo ha sido marcado como resuelto' };
 };
 
-const crearReclamo = async ({ id_factura, id_cliente, motivo, descripcion, imagen = null }) => {
-  if (!id_factura || !id_cliente || !motivo || !descripcion) {
-    throw new Error('Faltan campos requeridos');
+const crearReclamo = async ({
+  id_factura,
+  id_cliente,
+  motivo,
+  descripcion,
+  imagen = null
+}) => {
+  if (!id_cliente) {
+    throw new Error('Cliente no encontrado');
+  }
+
+  if (!id_factura) {
+    throw new Error('Factura no encontrada');
   }
 
   const pool = await getConnection();
 
-  const envioResult = await pool.request()
+  const clienteResult = await pool.request()
+    .input('id_cliente', sql.Int, parseInt(id_cliente))
+    .query(`
+      SELECT id_cliente
+      FROM Cliente
+      WHERE id_cliente = @id_cliente
+    `);
+
+  if (clienteResult.recordset.length === 0) {
+    throw new Error('Cliente no encontrado');
+  }
+
+  const facturaResult = await pool.request()
     .input('id_factura', sql.Int, parseInt(id_factura))
     .query(`
-      SELECT e.id_estado_envio
+      SELECT 
+        f.id_factura,
+        p.id_cliente,
+        e.id_estado_envio
       FROM Factura f
-      JOIN Pedido p  ON f.id_pedido = p.id_pedido
-      JOIN Envio e   ON p.id_envio  = e.id_envio
+      INNER JOIN Pedido p ON f.id_pedido = p.id_pedido
+      INNER JOIN Envio e ON p.id_envio = e.id_envio
       WHERE f.id_factura = @id_factura
     `);
 
-  if (!envioResult.recordset[0] || envioResult.recordset[0].id_estado_envio !== 3) {
-    throw new Error('No puede realizar reclamos sobre compras que no fueron realizadas por usted');
+  if (facturaResult.recordset.length === 0) {
+    throw new Error('Factura no encontrada');
   }
-  // Verificar que la factura pertenezca al cliente
-const facturaCliente = await pool.request()
-  .input('id_factura', sql.Int, parseInt(id_factura))
-  .input('id_cliente', sql.Int, parseInt(id_cliente))
-  .query(`
-    SELECT 1
-    FROM Factura f
-    JOIN Pedido p ON f.id_pedido = p.id_pedido
-    WHERE f.id_factura = @id_factura
-      AND p.id_cliente = @id_cliente
-  `);
 
-if (facturaCliente.recordset.length === 0) {
-  throw new Error('No puede realizar reclamos sobre compras no realizadas por el cliente');
-}
+  const factura = facturaResult.recordset[0];
 
-  const existe = await pool.request()
+  if (factura.id_cliente !== parseInt(id_cliente)) {
+    throw new Error(
+      'No puede realizar reclamos sobre compras no realizadas por el cliente'
+    );
+  }
+
+  if (factura.id_estado_envio !== 3) {
+    throw new Error('Solo podés reclamar compras que ya fueron entregadas');
+  }
+
+  const reclamoExistente = await pool.request()
     .input('id_factura', sql.Int, parseInt(id_factura))
     .input('id_cliente', sql.Int, parseInt(id_cliente))
-    .query(`SELECT 1 FROM Reclamo WHERE id_factura = @id_factura AND id_cliente = @id_cliente`);
+    .query(`
+      SELECT id_reclamo
+      FROM Reclamo
+      WHERE id_factura = @id_factura
+        AND id_cliente = @id_cliente
+    `);
 
-  if (existe.recordset.length > 0) throw new Error('Ya existe un reclamo para esta compra');
+  if (reclamoExistente.recordset.length > 0) {
+    throw new Error('Ya existe un reclamo para esta compra');
+  }
+
+  if (
+    motivo === undefined ||
+    motivo === null ||
+    motivo === '' ||
+    descripcion === undefined ||
+    descripcion === null ||
+    descripcion === ''
+  ) {
+    throw new Error('Faltan campos requeridos');
+  }
+
+  if (motivo.trim() === '') {
+    throw new Error('El motivo no contiene información válida');
+  }
+
+  if (descripcion.trim() === '') {
+    throw new Error('La descripción no contiene información válida');
+  }
 
   const fecha = new Date();
   const id_estadoReclamo = await obtenerIdEstado(pool, 'Pendiente');
-  const id_reclamo = await insertarReclamo(pool, fecha, motivo.trim(), id_estadoReclamo, parseInt(id_factura), parseInt(id_cliente));
 
-  await insertarMensaje(pool, descripcion.trim(), fecha, id_reclamo, null, imagen);
+  const id_reclamo = await insertarReclamo(
+    pool,
+    fecha,
+    motivo.trim(),
+    id_estadoReclamo,
+    parseInt(id_factura),
+    parseInt(id_cliente)
+  );
 
-  return { mensaje: 'Reclamo registrado con éxito'};
+  await insertarMensaje(
+    pool,
+    descripcion.trim(),
+    fecha,
+    id_reclamo,
+    null,
+    imagen
+  );
+
+  return {
+    mensaje: 'Reclamo registrado con éxito'
+  };
 };
 
 const responderCliente = async (id_reclamo, id_cliente, contenido, imagen = null) => {
