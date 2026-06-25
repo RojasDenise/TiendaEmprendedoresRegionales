@@ -9,6 +9,28 @@
 const sql = require('mssql');
 const { getConnection } = require('../config/db');
 
+/**
+ * Registra una valoración de un cliente sobre un producto comprado.
+ *
+ * Valida que existan el cliente, la factura y el producto.
+ * También verifica que el producto pertenezca a una factura del cliente,
+ * que la compra tenga estado de envío entregado y que el puntaje esté entre 1 y 5.
+ *
+ * @async
+ * @function agregarValoracion
+ * @param {Object} datos - Datos necesarios para registrar la valoración.
+ * @param {number|string} datos.id_factura - Identificador de la factura asociada a la compra.
+ * @param {number|string} datos.id_producto - Identificador del producto valorado.
+ * @param {number|string} datos.id_cliente - Identificador del cliente que realiza la valoración.
+ * @param {number|string} datos.puntaje - Puntaje asignado al producto, entre 1 y 5.
+ * @param {string} [datos.comentario] - Comentario opcional del cliente.
+ * @returns {Promise<Object>} Mensaje de confirmación de la valoración registrada.
+ * @throws {Error} Si falta cliente, factura o producto.
+ * @throws {Error} Si el cliente intenta valorar un producto que no compró.
+ * @throws {Error} Si la compra no fue entregada.
+ * @throws {Error} Si el puntaje está vacío o fuera del rango permitido.
+ * @throws {Error} Si el producto ya fue valorado para esa factura por ese cliente.
+ */
 const agregarValoracion = async ({
   id_factura,
   id_producto,
@@ -148,6 +170,18 @@ const agregarValoracion = async ({
   };
 };
 
+/**
+ * Obtiene las valoraciones asociadas a un producto y calcula su promedio.
+ *
+ * Consulta todas las valoraciones realizadas sobre un producto determinado,
+ * incluyendo el puntaje, comentario, fecha y nombre completo del cliente.
+ *
+ * @async
+ * @function obtenerValoracionesPorProducto
+ * @param {number|string} id_producto - Identificador del producto consultado.
+ * @returns {Promise<Object>} Objeto con promedio, total de valoraciones y listado de valoraciones.
+ * @throws {Error} Si no se informa el identificador del producto.
+ */
 const obtenerValoracionesPorProducto = async (id_producto) => {
   if (!id_producto) {
     throw new Error('Producto no encontrado');
@@ -163,7 +197,7 @@ const obtenerValoracionesPorProducto = async (id_producto) => {
         v.puntaje,
         v.comentario,
         v.fecha,
-        c.apellidoNombre AS nombre_cliente
+        CONCAT(c.nombre, ' ', c.apellido) AS nombre_cliente
       FROM Valoración v
       JOIN Cliente c ON v.id_cliente = c.id_cliente
       WHERE v.id_producto = @id_producto

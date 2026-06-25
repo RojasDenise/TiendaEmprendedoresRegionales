@@ -79,7 +79,7 @@ export default function ClienteLayout() {
   const totalItems = itemsCarrito.reduce((acc, i) => acc + i.cantidad, 0);
 
   const initials =
-    user?.apellidoNombre?.split(',')[0]?.trim().slice(0, 2).toUpperCase() || 'U';
+  `${user?.nombre?.charAt(0) || ''}${user?.apellido?.charAt(0) || ''}`.toUpperCase() || 'U';
 
   const handleLogout = () => {
     sessionStorage.clear();
@@ -143,8 +143,10 @@ export default function ClienteLayout() {
         <div style={s.sidebarFooter}>
           <div style={s.userRow}>
             <div style={s.avatar}>{initials}</div>
-            <div style={s.userName}>{user?.apellidoNombre?.split(',')[0] || 'Usuario'}</div>
+            <div style={s.userName}> {user ? `${user.nombre || ''} ${user.apellido || ''}`.trim() : 'Usuario'}
           </div>
+          
+        </div>
           <button onClick={handleLogout} style={s.btnLogout}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

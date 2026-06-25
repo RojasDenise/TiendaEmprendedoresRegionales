@@ -24,7 +24,7 @@ const obtenerPerfil = async (req, res) => {
     const result = await pool.request()
       .input('id', sql.Int, parseInt(id))
       .query(`
-        SELECT id_cliente, apellidoNombre, DNI, fecha_nacimiento, email
+        SELECT id_cliente, nombre, apellido, DNI, fecha_nacimiento, email
         FROM Cliente
         WHERE id_cliente = @id
       `);
@@ -50,10 +50,10 @@ const obtenerPerfil = async (req, res) => {
  */
 const editarPerfil = async (req, res) => {
   const { id } = req.params;
-  const { apellidoNombre, email, contraseñaActual, contraseñaNueva } = req.body;
+  const { nombre, apellido, email, contraseñaActual, contraseñaNueva } = req.body;
 
-  if (!apellidoNombre || !email)
-    return res.status(400).json({ message: 'Nombre y email son obligatorios.' });
+  if (!nombre || !apellido || !email)
+    return res.status(400).json({ message: 'Nombre, apellido y email son obligatorios.' });
 
   try {
     const pool   = await getConnection();
@@ -77,12 +77,14 @@ const editarPerfil = async (req, res) => {
       const hash = await bcrypt.hash(contraseñaNueva, 10);
       await pool.request()
         .input('id',             sql.Int,     parseInt(id))
-        .input('apellidoNombre', sql.VarChar, apellidoNombre)
+        .input('nombre',         sql.VarChar, nombre)
+        .input('apellido',       sql.VarChar, apellido)
         .input('email',          sql.VarChar, email)
         .input('pass',           sql.VarChar, hash)
         .query(`
           UPDATE Cliente
-          SET apellidoNombre = @apellidoNombre,
+          SET nombre = @nombre,
+              apellido = @apellido,
               email          = @email,
               [contraseña]   = @pass
           WHERE id_cliente = @id
@@ -90,11 +92,13 @@ const editarPerfil = async (req, res) => {
     } else {
       await pool.request()
         .input('id',             sql.Int,     parseInt(id))
-        .input('apellidoNombre', sql.VarChar, apellidoNombre)
+        .input('nombre', sql.VarChar, nombre)
+        .input('apellido', sql.VarChar, apellido)
         .input('email',          sql.VarChar, email)
         .query(`
           UPDATE Cliente
-          SET apellidoNombre = @apellidoNombre,
+          SET nombre = @nombre,
+              apellido = @apellido,
               email          = @email
           WHERE id_cliente = @id
         `);
@@ -104,7 +108,7 @@ const editarPerfil = async (req, res) => {
     const updated = await pool.request()
       .input('id', sql.Int, parseInt(id))
       .query(`
-        SELECT id_cliente, apellidoNombre, DNI, fecha_nacimiento, email
+        SELECT id_cliente, nombre, apellido, DNI, fecha_nacimiento, email
         FROM Cliente WHERE id_cliente = @id
       `);
 

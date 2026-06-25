@@ -87,7 +87,7 @@ export default function DashboardLayout({ rol }) {
   }, [isAdmin]);
 
   const initials =
-    user?.apellidoNombre?.split(',')[0]?.trim().slice(0, 2).toUpperCase() || 'U';
+  `${user?.nombre?.charAt(0) || ''}${user?.apellido?.charAt(0) || ''}`.toUpperCase() || 'U';
 
   const handleLogout = () => {
     sessionStorage.clear();
@@ -145,7 +145,7 @@ export default function DashboardLayout({ rol }) {
         <div style={s.sidebarFooter}>
           <div style={s.userRow}>
             <div style={s.avatar}>{initials}</div>
-            <div style={s.userName}>{user?.apellidoNombre?.split(',')[0] || 'Usuario'}</div>
+            <div style={s.userName}>{user ? `${user.nombre || ''} ${user.apellido || ''}`.trim() : 'Usuario'} </div>
           </div>
 
           <button onClick={handleLogout} style={s.btnLogout}>

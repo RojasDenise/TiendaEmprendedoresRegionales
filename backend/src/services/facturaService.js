@@ -52,7 +52,7 @@ const obtenerFacturasPorCliente = async (id_cliente) => {
         prod.nombre       AS producto_nombre,
         prod.imagen       AS producto_imagen,
         cat.descripcion   AS categoria,
-        u.apellidoNombre  AS vendedor
+        CONCAT(u.nombre, ' ', u.apellido) AS vendedor
       FROM DetalleFactura df
       JOIN Producto  prod ON df.id_producto    = prod.id_producto
       JOIN Categoria cat  ON prod.id_categoria = cat.id_categoria

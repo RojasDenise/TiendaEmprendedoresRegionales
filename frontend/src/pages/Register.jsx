@@ -32,7 +32,7 @@ const BASE_URL = 'http://localhost:5000/api';
  */
 export default function Register() {
   const [form, setForm] = useState({
-    apellidoNombre: '', DNI: '', fecha_nacimiento: '',
+    nombre: '', apellido: '', DNI: '', fecha_nacimiento: '',
     email: '', contraseña: '', id_rol: '2', nombreEmprendimiento: '', reseña: ''
   });
   const [error, setError] = useState('');
@@ -131,9 +131,16 @@ export default function Register() {
 
         <form onSubmit={handleSubmit}>
           <div style={s.campo}>
-            <label style={s.label}>Apellido y nombre</label>
-            <input name="apellidoNombre" value={form.apellidoNombre} onChange={handleChange}
-              required style={s.input} placeholder="García, Juan" />
+            <label style={s.label}>Nombre</label>
+            <input name="nombre" value={form.nombre} onChange={handleChange}
+              required style={s.input} placeholder="Juan" />
+          </div>
+          <div style={s.campo}>
+            <label style={s.label}>Apellido</label>
+            <input
+              name="apellido" value={form.apellido} onChange={handleChange}
+              required style={s.input} placeholder="García"
+            />
           </div>
 
           <div style={s.grid2}>

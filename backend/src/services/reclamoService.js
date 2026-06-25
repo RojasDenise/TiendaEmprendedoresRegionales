@@ -69,6 +69,18 @@ const verificarReclamo = async (pool, id_reclamo) => {
 // SERVICIOS PÚBLICOS
 // ====================================================================
 
+/**
+ * Obtiene todos los reclamos asociados a los productos de un emprendedor.
+ *
+ * Retorna la información general del reclamo junto con los datos del cliente,
+ * la factura y el estado actual del reclamo.
+ *
+ * @async
+ * @function obtenerReclamos
+ * @param {number|string} id_usuario - Identificador del emprendedor.
+ * @returns {Promise<Array>} Listado de reclamos asociados al emprendedor.
+ */
+
 const obtenerReclamos = async (id_usuario) => {
   const pool = await getConnection();
   const result = await pool.request()
@@ -79,7 +91,7 @@ const obtenerReclamos = async (id_usuario) => {
         r.fecha_reclamo,
         r.motivo,
         er.descripcion AS estado,
-        c.apellidoNombre AS nombre_cliente,
+        CONCAT(c.nombre, ' ', c.apellido) AS nombre_cliente,
         c.email AS email_cliente,
         f.id_factura,
         f.total AS total_factura
@@ -95,6 +107,19 @@ const obtenerReclamos = async (id_usuario) => {
   return result.recordset;
 };
 
+/**
+ * Obtiene el detalle de un reclamo específico.
+ *
+ * Recupera la información principal del reclamo, incluyendo cliente,
+ * factura, motivo y estado actual.
+ *
+ * @async
+ * @function obtenerDetalle
+ * @param {number|string} id_reclamo - Identificador del reclamo.
+ * @returns {Promise<Object>} Información detallada del reclamo.
+ * @throws {Error} Si el reclamo no existe.
+ */
+
 const obtenerDetalle = async (id_reclamo) => {
   const pool = await getConnection();
   const result = await pool.request()
@@ -105,7 +130,7 @@ const obtenerDetalle = async (id_reclamo) => {
         r.fecha_reclamo,
         r.motivo,
         er.descripcion AS estado,
-        c.apellidoNombre AS nombre_cliente,
+        CONCAT(c.nombre, ' ', c.apellido) AS nombre_cliente,
         c.email AS email_cliente,
         f.id_factura,
         f.total AS total_factura
@@ -118,6 +143,18 @@ const obtenerDetalle = async (id_reclamo) => {
   if (!result.recordset[0]) throw new Error('Reclamo no encontrado');
   return result.recordset[0];
 };
+
+/**
+ * Obtiene el historial de mensajes de un reclamo.
+ *
+ * Devuelve todos los mensajes intercambiados entre cliente y emprendedor,
+ * ordenados cronológicamente.
+ *
+ * @async
+ * @function obtenerMensajes
+ * @param {number|string} id_reclamo - Identificador del reclamo.
+ * @returns {Promise<Array>} Historial de mensajes del reclamo.
+ */
 
 const obtenerMensajes = async (id_reclamo) => {
   const pool = await getConnection();
@@ -141,6 +178,22 @@ const obtenerMensajes = async (id_reclamo) => {
   return result.recordset;
 };
 
+/**
+ * Registra una respuesta del emprendedor a un reclamo.
+ *
+ * Inserta un nuevo mensaje y actualiza automáticamente el estado
+ * del reclamo a "Respondido".
+ *
+ * @async
+ * @function responderReclamo
+ * @param {number|string} id_reclamo - Identificador del reclamo.
+ * @param {number|string} id_usuario - Identificador del emprendedor.
+ * @param {string} contenido - Mensaje de respuesta.
+ * @param {string|null} [imagen=null] - Imagen adjunta opcional.
+ * @returns {Promise<Object>} Mensaje de confirmación.
+ * @throws {Error} Si el reclamo no existe, está resuelto o el contenido está vacío.
+ */
+
 const responderReclamo = async (id_reclamo, id_usuario, contenido, imagen = null) => {
   if (!contenido || contenido.trim() === '') {
     throw new Error('El contenido de la respuesta no puede estar vacío');
@@ -163,6 +216,18 @@ const responderReclamo = async (id_reclamo, id_usuario, contenido, imagen = null
   return { mensaje: 'Respuesta registrada con éxito'};
 };
 
+/**
+ * Marca un reclamo como resuelto.
+ *
+ * Actualiza el estado del reclamo a "Resuelto".
+ *
+ * @async
+ * @function resolverReclamo
+ * @param {number|string} id_reclamo - Identificador del reclamo.
+ * @returns {Promise<Object>} Mensaje de confirmación.
+ * @throws {Error} Si el reclamo no existe o ya fue resuelto.
+ */
+
 const resolverReclamo = async (id_reclamo) => {
   const pool = await getConnection();
   const reclamo = await verificarReclamo(pool, parseInt(id_reclamo));
@@ -174,6 +239,25 @@ const resolverReclamo = async (id_reclamo) => {
 
   return { mensaje: 'El reclamo ha sido marcado como resuelto' };
 };
+
+/**
+ * Registra un nuevo reclamo realizado por un cliente.
+ *
+ * Verifica la existencia del cliente y la factura, valida que la compra
+ * pertenezca al cliente, que haya sido entregada y que no exista un reclamo
+ * previo para esa compra. Luego crea el reclamo y el mensaje inicial.
+ *
+ * @async
+ * @function crearReclamo
+ * @param {Object} datos - Información del reclamo.
+ * @param {number|string} datos.id_factura - Identificador de la factura.
+ * @param {number|string} datos.id_cliente - Identificador del cliente.
+ * @param {string} datos.motivo - Motivo del reclamo.
+ * @param {string} datos.descripcion - Descripción del reclamo.
+ * @param {string|null} [datos.imagen=null] - Imagen adjunta opcional.
+ * @returns {Promise<Object>} Mensaje de confirmación.
+ * @throws {Error} Si los datos son inválidos, la compra no corresponde al cliente, no fue entregada o ya existe un reclamo.
+ */
 
 const crearReclamo = async ({
   id_factura,
@@ -292,6 +376,21 @@ const crearReclamo = async ({
   };
 };
 
+/**
+ * Registra una respuesta del cliente dentro de un reclamo.
+ *
+ * Agrega un nuevo mensaje al historial del reclamo.
+ *
+ * @async
+ * @function responderCliente
+ * @param {number|string} id_reclamo - Identificador del reclamo.
+ * @param {number|string} id_cliente - Identificador del cliente.
+ * @param {string} contenido - Contenido del mensaje.
+ * @param {string|null} [imagen=null] - Imagen adjunta opcional.
+ * @returns {Promise<Object>} Mensaje de confirmación.
+ * @throws {Error} Si el reclamo no existe, está resuelto o el contenido está vacío.
+ */
+
 const responderCliente = async (id_reclamo, id_cliente, contenido, imagen = null) => {
   if (!contenido || contenido.trim() === '') {
     throw new Error('El contenido no puede estar vacío');
@@ -310,6 +409,18 @@ const responderCliente = async (id_reclamo, id_cliente, contenido, imagen = null
 
   return { mensaje: 'Mensaje enviado con éxito'};
 };
+
+/**
+ * Obtiene todos los reclamos realizados por un cliente.
+ *
+ * Devuelve el listado de reclamos junto con la factura asociada
+ * y el estado actual de cada uno.
+ *
+ * @async
+ * @function obtenerReclamosCliente
+ * @param {number|string} id_cliente - Identificador del cliente.
+ * @returns {Promise<Array>} Listado de reclamos del cliente.
+ */
 
 const obtenerReclamosCliente = async (id_cliente) => {
   const pool = await getConnection();

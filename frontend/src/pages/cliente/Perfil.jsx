@@ -22,6 +22,7 @@ export default function Perfil() {
 
   // Campos del formulario
   const [nombre,          setNombre]          = useState('');
+  const [apellido, setApellido] = useState('');
   const [email,           setEmail]           = useState('');
   const [passActual,      setPassActual]      = useState('');
   const [passNueva,       setPassNueva]       = useState('');
@@ -37,7 +38,8 @@ export default function Perfil() {
       const res  = await fetch(`${BASE_URL}/clientes/${id_cliente}`);
       const data = await res.json();
       setPerfil(data);
-      setNombre(data.apellidoNombre);
+      setNombre(data.nombre);
+      setApellido(data.apellido);
       setEmail(data.email);
     } catch { mostrarToast('Error al cargar el perfil', false); }
     finally  { setCargando(false); }
@@ -50,7 +52,7 @@ export default function Perfil() {
 
   const handleGuardar = async () => {
     setError('');
-    if (!nombre.trim() || !email.trim()) return setError('Nombre y email son obligatorios.');
+    if (!nombre.trim() || !apellido.trim() || !email.trim()) return setError('Nombre, apellido y email son obligatorios.');
     if (cambiarPass) {
       if (!passActual)              return setError('Ingresá tu contraseña actual.');
       if (passNueva.length < 6)     return setError('La nueva contraseña debe tener al menos 6 caracteres.');
@@ -59,7 +61,7 @@ export default function Perfil() {
 
     setGuardando(true);
     try {
-      const body = { apellidoNombre: nombre.trim(), email: email.trim() };
+      const body = { nombre: nombre.trim(), apellido: apellido.trim(), email: email.trim() };
       if (cambiarPass) {
         body.contraseñaActual = passActual;
         body.contraseñaNueva  = passNueva;
@@ -74,7 +76,7 @@ export default function Perfil() {
       if (!res.ok) throw new Error(data.message || 'Error al guardar');
 
       // Actualizar sessionStorage con el nuevo nombre
-      const userActualizado = { ...user, apellidoNombre: data.cliente.apellidoNombre };
+      const userActualizado = { ...user, nombre: data.cliente.nombre, apellido: data.cliente.apellido };
       sessionStorage.setItem('user', JSON.stringify(userActualizado));
 
       setPerfil(data.cliente);
@@ -90,7 +92,8 @@ export default function Perfil() {
     setEditando(false);
     setCambiarPass(false);
     setError('');
-    setNombre(perfil.apellidoNombre);
+    setNombre(perfil.nombre);
+    setApellido(perfil.apellido);
     setEmail(perfil.email);
     setPassActual(''); setPassNueva(''); setPassConfirm('');
   };
@@ -105,7 +108,7 @@ export default function Perfil() {
     </div>
   );
 
-  const initials = perfil?.apellidoNombre?.split(',')[0]?.trim().slice(0, 2).toUpperCase() || 'U';
+  const initials =`${perfil?.nombre?.charAt(0) || ''}${perfil?.apellido?.charAt(0) || ''}`.toUpperCase() || 'U';
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", maxWidth: 560 }}>
@@ -126,7 +129,8 @@ export default function Perfil() {
       <div style={s.avatarRow}>
         <div style={s.avatar}>{initials}</div>
         <div>
-          <div style={s.avatarNombre}>{perfil?.apellidoNombre}</div>
+          <div style={s.avatarNombre}> {perfil?.nombre} {perfil?.apellido}
+</div>
           <div style={s.avatarEmail}>{perfil?.email}</div>
         </div>
       </div>
@@ -149,7 +153,8 @@ export default function Perfil() {
         {!editando ? (
           /* ── Vista ── */
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <Campo label="Nombre completo" valor={perfil?.apellidoNombre} />
+            <Campo label="Nombre" valor={perfil?.nombre} />
+            <Campo label="Apellido" valor={perfil?.apellido} />
             <Campo label="Email"           valor={perfil?.email} />
             <Campo label="DNI"             valor={perfil?.DNI} />
             <Campo label="Fecha de nacimiento" valor={perfil?.fecha_nacimiento ? formatearFecha(perfil.fecha_nacimiento) : '—'} />
@@ -161,9 +166,15 @@ export default function Perfil() {
             {error && <div style={s.err}>{error}</div>}
 
             <div>
-              <div style={s.label}>Nombre completo</div>
-              <input style={s.input} value={nombre}
-                onChange={e => setNombre(e.target.value)} />
+              <div style={s.label}>Nombre</div>
+              <input style={s.input} value={nombre} onChange={e => setNombre(e.target.value)} />
+            </div>
+
+            <div>
+              <div style={s.label}>Apellido</div>
+              <input
+                style={s.input} value={apellido} onChange={e => setApellido(e.target.value)}
+              />
             </div>
 
             <div>

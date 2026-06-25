@@ -77,7 +77,7 @@ const obtenerProductoPorId = async (id) => {
       SELECT p.*, 
              c.descripcion AS categoria_nombre, 
              ep.descripcion AS estado_nombre,
-             u.apellidoNombre AS nombre_usuario,
+             CONCAT(u.nombre, ' ', u.apellido) AS nombre_usuario,
              u.nombreEmprendimiento
       FROM Producto p
       JOIN Categoria c ON p.id_categoria = c.id_categoria

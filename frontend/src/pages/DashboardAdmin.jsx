@@ -211,7 +211,7 @@ function TablaEmprendedores({ emprendedores }) {
           {emprendedores.map(e => (
             <tr key={e.id_usuario} style={s.tr}>
               <td style={s.td}><div style={{ fontWeight: 500, color: '#111', fontSize: 13.5 }}>{e.nombreEmprendimiento || '—'}</div></td>
-              <td style={s.td}>{e.apellidoNombre}</td>
+              <td style={s.td}>{`${e.nombre || ''} ${e.apellido || ''}`.trim()}</td>
               <td style={s.td}>{e.DNI}</td>
               <td style={s.td}>{e.email}</td>
               <td style={s.td}><span style={s.badgeActivo}>Activo</span></td>
@@ -245,7 +245,7 @@ function TablaSolicitudes({ solicitudes, onAprobar, onRechazar }) {
           {solicitudes.map(s_ => (
             <tr key={s_.id_usuario} style={s.tr}>
               <td style={s.td}><div style={{ fontWeight: 500, color: '#111', fontSize: 13.5 }}>{s_.nombreEmprendimiento || '—'}</div></td>
-              <td style={s.td}>{s_.apellidoNombre}</td>
+              <td style={s.td}>{`${s_.nombre || ''} ${s_.apellido || ''}`.trim()}</td>
               <td style={s.td}>{s_.DNI}</td>
               <td style={{ ...s.td, maxWidth: 220, color: '#777', fontSize: 12.5 }}>
                 {s_.reseña?.slice(0, 80)}{s_.reseña?.length > 80 ? '...' : ''}

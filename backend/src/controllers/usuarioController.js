@@ -22,7 +22,7 @@ const obtenerSolicitudes = async (req, res) => {
     try {
         const pool = await getConnection();
         const result = await pool.request().query(`
-            SELECT id_usuario, apellidoNombre, DNI, email, fecha_nacimiento,
+            SELECT id_usuario, nombre, apellido, DNI, email, fecha_nacimiento,
                    nombreEmprendimiento, reseña, id_estado
             FROM Usuario
             WHERE id_rol = 2 AND id_estado = 2
@@ -48,7 +48,7 @@ const obtenerEmprendedoresActivos = async (req, res) => {
     try {
         const pool = await getConnection();
         const result = await pool.request().query(`
-            SELECT id_usuario, apellidoNombre, DNI, email,
+            SELECT id_usuario, nombre, apellido, DNI, email, fecha_nacimiento,
                    nombreEmprendimiento, reseña, id_estado
             FROM Usuario
             WHERE id_rol = 2 AND id_estado = 1
