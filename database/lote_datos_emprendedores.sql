@@ -12,7 +12,7 @@ GO
 -- Categoria: 1=Artesanías, 2=Accesorios, 3=Gastronomía, 4=Textiles, 5=Decoración
 -- EstadoPago: 1=Pendiente, 2=Aprobado, 3=Rechazado, 4=Reembolsado
 -- estado_envio: 1=En Preparacion, 2=En Camino, 3=Entregado, 4=Cancelado
--- Estado_Reclamo: 1=Pendiente, 2=Resuelto, 3=Respondido
+-- Estado_Reclamo: 1=Pendiente, 2=Respondido, 3=Resuelto
 -- Estado_Producto: 1=Con Stock, 2=Sin Stock, 3=Descontinuado
 -- Estado_pedido: 1=Pendiente de Pago, 2=Pagado, 3=Cancelado
 
@@ -58,29 +58,29 @@ GO
 -- Contraseña: "password123" hasheada con bcrypt rounds=10
 -- Hash: $2b$10$Dgxwji.1PHDk3GEKGR/Ef0OC2V9mJ5jpxbcVvpJwqNLHMXcAHCu4e
 -- =============================================
-INSERT INTO Usuario (apellidoNombre, DNI, fecha_nacimiento, email, contraseña, reseña, nombreEmprendimiento, id_estado, id_rol, fecha_ultima_conexion)
+INSERT INTO Usuario (nombre, apellido, DNI, fecha_nacimiento, email, contraseña, reseña, nombreEmprendimiento, id_estado, id_rol, fecha_ultima_conexion)
 VALUES
-('Romero, Laura',      28741523, '1990-03-15', 'laura.romero@emprendedores.com',
+('Laura',      'Romero',    28741523, '1990-03-15', 'laura.romero@emprendedores.com',
  '$2b$10$Dgxwji.1PHDk3GEKGR/Ef0OC2V9mJ5jpxbcVvpJwqNLHMXcAHCu4e',
  'Artesana correntina con más de 10 años de experiencia en tejidos típicos.',
  'Manos del Iberá', 1, 2, GETDATE()),
 
-('Villalba, Marcos',   31654209, '1988-07-22', 'marcos.villalba@emprendedores.com',
+('Marcos',     'Villalba',  31654209, '1988-07-22', 'marcos.villalba@emprendedores.com',
  '$2b$10$Dgxwji.1PHDk3GEKGR/Ef0OC2V9mJ5jpxbcVvpJwqNLHMXcAHCu4e',
  'Productor de dulces y conservas regionales del litoral.',
  'Sabores del Litoral', 1, 2, GETDATE()),
 
-('Duarte, Sofía',      35120874, '1995-11-08', 'sofia.duarte@emprendedores.com',
+('Sofía',      'Duarte',    35120874, '1995-11-08', 'sofia.duarte@emprendedores.com',
  '$2b$10$Dgxwji.1PHDk3GEKGR/Ef0OC2V9mJ5jpxbcVvpJwqNLHMXcAHCu4e',
  'Diseñadora de accesorios con materiales naturales de la región.',
  'EcoAccesorios NEA', 1, 2, GETDATE()),
 
-('González, Rodrigo',  29874561, '1985-05-30', 'rodrigo.gonzalez@emprendedores.com',
+('Rodrigo',    'González',  29874561, '1985-05-30', 'rodrigo.gonzalez@emprendedores.com',
  '$2b$10$Dgxwji.1PHDk3GEKGR/Ef0OC2V9mJ5jpxbcVvpJwqNLHMXcAHCu4e',
  'Carpintero artesanal especializado en decoración del hogar.',
  'Maderas del Paraná', 1, 2, GETDATE()),
 
-('López, Valentina',   40253698, '2000-09-14', 'valentina.lopez@emprendedores.com',
+('Valentina',  'López',     40253698, '2000-09-14', 'valentina.lopez@emprendedores.com',
  '$2b$10$Dgxwji.1PHDk3GEKGR/Ef0OC2V9mJ5jpxbcVvpJwqNLHMXcAHCu4e',
  'Confeccionista de ropa típica y textiles regionales.',
  'Tejidos Valentina', 1, 2, GETDATE());
@@ -90,21 +90,21 @@ GO
 -- CLIENTES
 -- Misma contraseña: "password123"
 -- =============================================
-INSERT INTO Cliente (apellidoNombre, DNI, fecha_nacimiento, email, contraseña)
+INSERT INTO Cliente (nombre, apellido, DNI, fecha_nacimiento, email, contraseña)
 VALUES
-('Fernández, Ana',      32541879, '1993-02-18', 'ana.fernandez@mail.com',
+('Ana',       'Fernández', 32541879, '1993-02-18', 'ana.fernandez@mail.com',
  '$2b$10$Dgxwji.1PHDk3GEKGR/Ef0OC2V9mJ5jpxbcVvpJwqNLHMXcAHCu4e'),
 
-('Medina, Carlos',      27896543, '1987-06-25', 'carlos.medina@mail.com',
+('Carlos',    'Medina',    27896543, '1987-06-25', 'carlos.medina@mail.com',
  '$2b$10$Dgxwji.1PHDk3GEKGR/Ef0OC2V9mJ5jpxbcVvpJwqNLHMXcAHCu4e'),
 
-('Torres, Lucía',       38741256, '1998-12-03', 'lucia.torres@mail.com',
+('Lucía',     'Torres',    38741256, '1998-12-03', 'lucia.torres@mail.com',
  '$2b$10$Dgxwji.1PHDk3GEKGR/Ef0OC2V9mJ5jpxbcVvpJwqNLHMXcAHCu4e'),
 
-('Sánchez, Pablo',      33210547, '1991-08-17', 'pablo.sanchez@mail.com',
+('Pablo',     'Sánchez',   33210547, '1991-08-17', 'pablo.sanchez@mail.com',
  '$2b$10$Dgxwji.1PHDk3GEKGR/Ef0OC2V9mJ5jpxbcVvpJwqNLHMXcAHCu4e'),
 
-('Ramírez, Florencia',  41023698, '2001-04-09', 'florencia.ramirez@mail.com',
+('Florencia', 'Ramírez',   41023698, '2001-04-09', 'florencia.ramirez@mail.com',
  '$2b$10$Dgxwji.1PHDk3GEKGR/Ef0OC2V9mJ5jpxbcVvpJwqNLHMXcAHCu4e');
 GO
 
