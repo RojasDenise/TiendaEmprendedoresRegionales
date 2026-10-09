@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { quitarDelCarrito } from '../../services/carritoService';
+import { UPLOADS_URL } from '../../config';
 
-const IMG_URL = 'http://localhost:5000/uploads/';
+const IMG_URL = UPLOADS_URL;
 
 /**
  * @fileoverview Sidebar deslizable del carrito de compras.

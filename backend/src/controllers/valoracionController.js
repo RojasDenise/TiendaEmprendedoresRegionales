@@ -1,4 +1,5 @@
 const valoracionService = require('../services/valoracionService');
+const { responderError, responderErrorInterno } = require('../utils/errores');
 
 // POST /api/valoraciones
 const crearValoracion = async (req, res) => {
@@ -7,7 +8,7 @@ const crearValoracion = async (req, res) => {
     res.status(201).json(result);
   } catch (error) {
     const status = error.message.includes('Ya valoraste') ? 409 : 400;
-    res.status(status).json({ message: error.message });
+    responderError(res, error, status, 'crearValoracion');
   }
 };
 
@@ -18,7 +19,7 @@ const obtenerValoracionesProducto = async (req, res) => {
     const result = await valoracionService.obtenerValoracionesPorProducto(parseInt(id_producto));
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    responderErrorInterno(res, error, 'obtenerValoracionesProducto');
   }
 };
 

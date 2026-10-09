@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { obtenerProductos, obtenerCategorias } from '../../services/productoService';
 import { agregarAlCarrito } from '../../services/carritoService';
+import { UPLOADS_URL } from '../../config';
 
 /**
  * @fileoverview Catálogo de productos del cliente.
@@ -12,7 +13,7 @@ import { agregarAlCarrito } from '../../services/carritoService';
  * @author Rojas Karen Denise; Sandoval María Victoria
  */
 
-const IMG_URL = 'http://localhost:5000/uploads/';
+const IMG_URL = UPLOADS_URL;
 
 const getInitials = (nombre = '') =>
   nombre.trim().slice(0, 2).toUpperCase() || '??';

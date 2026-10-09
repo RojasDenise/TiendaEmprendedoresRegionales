@@ -1,4 +1,3 @@
-const sql = require('mssql');
 const { getConnection } = require('../config/db');
 
 // ====================================================================
@@ -6,63 +5,47 @@ const { getConnection } = require('../config/db');
 // ====================================================================
 
 const insertarMensaje = async (pool, contenido, fecha, id_reclamo, id_usuario = null, imagen = null) => {
-  const result = await pool.request()
-    .input('contenido',  sql.VarChar(255), contenido)
-    .input('fecha',      sql.DateTime,     fecha)
-    .input('id_reclamo', sql.Int,          id_reclamo)
-    .input('id_usuario', sql.Int,          id_usuario)
-    .input('imagen',     sql.VarChar(255), imagen)
-    .query(`
+  const result = await pool.query(`
       INSERT INTO Mensaje_Reclamo (contenido, fecha_emision_mensaje, id_reclamo, id_usuario, imagen)
-      OUTPUT INSERTED.id_mensaje
-      VALUES (@contenido, @fecha, @id_reclamo, @id_usuario, @imagen)
-    `);
-  return result.recordset[0].id_mensaje;
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id_mensaje
+    `, [contenido, fecha, id_reclamo, id_usuario, imagen]);
+  return result.rows[0].id_mensaje;
 };
 
 const insertarReclamo = async (pool, fecha, motivo, id_estadoReclamo, id_factura, id_cliente) => {
-  const result = await pool.request()
-    .input('fecha_reclamo',    sql.DateTime,     fecha)
-    .input('motivo',           sql.VarChar(255), motivo)
-    .input('id_estadoReclamo', sql.Int,          id_estadoReclamo)
-    .input('id_factura',       sql.Int,          id_factura)
-    .input('id_cliente',       sql.Int,          id_cliente)
-    .query(`
-      INSERT INTO Reclamo (fecha_reclamo, motivo, id_estadoReclamo, id_factura, id_cliente)
-      OUTPUT INSERTED.id_reclamo
-      VALUES (@fecha_reclamo, @motivo, @id_estadoReclamo, @id_factura, @id_cliente)
-    `);
-  return result.recordset[0].id_reclamo;
+  const result = await pool.query(`
+      INSERT INTO Reclamo (fecha_reclamo, motivo, "id_estadoReclamo", id_factura, id_cliente)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id_reclamo
+    `, [fecha, motivo, id_estadoReclamo, id_factura, id_cliente]);
+  return result.rows[0].id_reclamo;
 };
 
 const actualizarEstadoReclamo = async (pool, id_reclamo, id_estadoReclamo) => {
-  await pool.request()
-    .input('id_reclamo',       sql.Int, id_reclamo)
-    .input('id_estadoReclamo', sql.Int, id_estadoReclamo)
-    .query(`
+  await pool.query(`
       UPDATE Reclamo 
-      SET id_estadoReclamo = @id_estadoReclamo
-      WHERE id_reclamo = @id_reclamo
-    `);
+      SET "id_estadoReclamo" = $1
+      WHERE id_reclamo = $2
+    `, [id_estadoReclamo, id_reclamo]);
 };
 
 const obtenerIdEstado = async (pool, descripcion) => {
-  const result = await pool.request()
-    .input('descripcion', sql.VarChar(50), descripcion)
-    .query(`SELECT id_estadoReclamo FROM Estado_Reclamo WHERE descripcion = @descripcion`);
-  return result.recordset[0].id_estadoReclamo;
+  const result = await pool.query(
+    `SELECT "id_estadoReclamo" FROM Estado_Reclamo WHERE descripcion = $1`,
+    [descripcion]
+  );
+  return result.rows[0].id_estadoReclamo;
 };
 
 const verificarReclamo = async (pool, id_reclamo) => {
-  const result = await pool.request()
-    .input('id_reclamo', sql.Int, id_reclamo)
-    .query(`
+  const result = await pool.query(`
       SELECT r.id_reclamo, er.descripcion AS estado
       FROM Reclamo r
-      JOIN Estado_Reclamo er ON r.id_estadoReclamo = er.id_estadoReclamo
-      WHERE r.id_reclamo = @id_reclamo
-    `);
-  return result.recordset[0] || null;
+      JOIN Estado_Reclamo er ON r."id_estadoReclamo" = er."id_estadoReclamo"
+      WHERE r.id_reclamo = $1
+    `, [id_reclamo]);
+  return result.rows[0] || null;
 };
 
 // ====================================================================
@@ -83,9 +66,7 @@ const verificarReclamo = async (pool, id_reclamo) => {
 
 const obtenerReclamos = async (id_usuario) => {
   const pool = await getConnection();
-  const result = await pool.request()
-    .input('id_usuario', sql.Int, parseInt(id_usuario))
-    .query(`
+  const result = await pool.query(`
       SELECT DISTINCT
         r.id_reclamo,
         r.fecha_reclamo,
@@ -96,15 +77,15 @@ const obtenerReclamos = async (id_usuario) => {
         f.id_factura,
         f.total AS total_factura
       FROM Reclamo r
-      JOIN Estado_Reclamo er ON r.id_estadoReclamo = er.id_estadoReclamo
+      JOIN Estado_Reclamo er ON r."id_estadoReclamo" = er."id_estadoReclamo"
       JOIN Cliente c         ON r.id_cliente = c.id_cliente
       JOIN Factura f         ON r.id_factura = f.id_factura
       JOIN DetalleFactura df ON f.id_factura = df.id_factura
       JOIN Producto p        ON df.id_producto = p.id_producto
-      WHERE p.id_usuario = @id_usuario
+      WHERE p.id_usuario = $1
       ORDER BY r.fecha_reclamo DESC
-    `);
-  return result.recordset;
+    `, [parseInt(id_usuario)]);
+  return result.rows;
 };
 
 /**
@@ -122,9 +103,7 @@ const obtenerReclamos = async (id_usuario) => {
 
 const obtenerDetalle = async (id_reclamo) => {
   const pool = await getConnection();
-  const result = await pool.request()
-    .input('id_reclamo', sql.Int, parseInt(id_reclamo))
-    .query(`
+  const result = await pool.query(`
       SELECT
         r.id_reclamo,
         r.fecha_reclamo,
@@ -135,13 +114,13 @@ const obtenerDetalle = async (id_reclamo) => {
         f.id_factura,
         f.total AS total_factura
       FROM Reclamo r
-      JOIN Estado_Reclamo er ON r.id_estadoReclamo = er.id_estadoReclamo
+      JOIN Estado_Reclamo er ON r."id_estadoReclamo" = er."id_estadoReclamo"
       JOIN Cliente c         ON r.id_cliente = c.id_cliente
       JOIN Factura f         ON r.id_factura = f.id_factura
-      WHERE r.id_reclamo = @id_reclamo
-    `);
-  if (!result.recordset[0]) throw new Error('Reclamo no encontrado');
-  return result.recordset[0];
+      WHERE r.id_reclamo = $1
+    `, [parseInt(id_reclamo)]);
+  if (!result.rows[0]) throw new Error('Reclamo no encontrado');
+  return result.rows[0];
 };
 
 /**
@@ -158,9 +137,7 @@ const obtenerDetalle = async (id_reclamo) => {
 
 const obtenerMensajes = async (id_reclamo) => {
   const pool = await getConnection();
-  const result = await pool.request()
-    .input('id_reclamo', sql.Int, parseInt(id_reclamo))
-    .query(`
+  const result = await pool.query(`
       SELECT
         mr.id_mensaje,
         mr.contenido,
@@ -172,10 +149,10 @@ const obtenerMensajes = async (id_reclamo) => {
           ELSE 'emprendedor'
         END AS emisor
       FROM Mensaje_Reclamo mr
-      WHERE mr.id_reclamo = @id_reclamo
+      WHERE mr.id_reclamo = $1
       ORDER BY mr.fecha_emision_mensaje ASC
-    `);
-  return result.recordset;
+    `, [parseInt(id_reclamo)]);
+  return result.rows;
 };
 
 /**
@@ -276,21 +253,17 @@ const crearReclamo = async ({
 
   const pool = await getConnection();
 
-  const clienteResult = await pool.request()
-    .input('id_cliente', sql.Int, parseInt(id_cliente))
-    .query(`
+  const clienteResult = await pool.query(`
       SELECT id_cliente
       FROM Cliente
-      WHERE id_cliente = @id_cliente
-    `);
+      WHERE id_cliente = $1
+    `, [parseInt(id_cliente)]);
 
-  if (clienteResult.recordset.length === 0) {
+  if (clienteResult.rows.length === 0) {
     throw new Error('Cliente no encontrado');
   }
 
-  const facturaResult = await pool.request()
-    .input('id_factura', sql.Int, parseInt(id_factura))
-    .query(`
+  const facturaResult = await pool.query(`
       SELECT 
         f.id_factura,
         p.id_cliente,
@@ -298,14 +271,14 @@ const crearReclamo = async ({
       FROM Factura f
       INNER JOIN Pedido p ON f.id_pedido = p.id_pedido
       INNER JOIN Envio e ON p.id_envio = e.id_envio
-      WHERE f.id_factura = @id_factura
-    `);
+      WHERE f.id_factura = $1
+    `, [parseInt(id_factura)]);
 
-  if (facturaResult.recordset.length === 0) {
+  if (facturaResult.rows.length === 0) {
     throw new Error('Factura no encontrada');
   }
 
-  const factura = facturaResult.recordset[0];
+  const factura = facturaResult.rows[0];
 
   if (factura.id_cliente !== parseInt(id_cliente)) {
     throw new Error(
@@ -317,17 +290,14 @@ const crearReclamo = async ({
     throw new Error('Solo podés reclamar compras que ya fueron entregadas');
   }
 
-  const reclamoExistente = await pool.request()
-    .input('id_factura', sql.Int, parseInt(id_factura))
-    .input('id_cliente', sql.Int, parseInt(id_cliente))
-    .query(`
+  const reclamoExistente = await pool.query(`
       SELECT id_reclamo
       FROM Reclamo
-      WHERE id_factura = @id_factura
-        AND id_cliente = @id_cliente
-    `);
+      WHERE id_factura = $1
+        AND id_cliente = $2
+    `, [parseInt(id_factura), parseInt(id_cliente)]);
 
-  if (reclamoExistente.recordset.length > 0) {
+  if (reclamoExistente.rows.length > 0) {
     throw new Error('Ya existe un reclamo para esta compra');
   }
 
@@ -424,9 +394,7 @@ const responderCliente = async (id_reclamo, id_cliente, contenido, imagen = null
 
 const obtenerReclamosCliente = async (id_cliente) => {
   const pool = await getConnection();
-  const result = await pool.request()
-    .input('id_cliente', sql.Int, parseInt(id_cliente))
-    .query(`
+  const result = await pool.query(`
       SELECT
         r.id_reclamo,
         r.fecha_reclamo,
@@ -435,12 +403,12 @@ const obtenerReclamosCliente = async (id_cliente) => {
         f.id_factura,
         f.total AS total_factura
       FROM Reclamo r
-      JOIN Estado_Reclamo er ON r.id_estadoReclamo = er.id_estadoReclamo
+      JOIN Estado_Reclamo er ON r."id_estadoReclamo" = er."id_estadoReclamo"
       JOIN Factura f          ON r.id_factura       = f.id_factura
-      WHERE r.id_cliente = @id_cliente
+      WHERE r.id_cliente = $1
       ORDER BY r.fecha_reclamo DESC
-    `);
-  return result.recordset;
+    `, [parseInt(id_cliente)]);
+  return result.rows;
 };
 
 module.exports = {

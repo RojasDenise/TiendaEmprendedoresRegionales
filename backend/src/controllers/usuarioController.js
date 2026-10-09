@@ -1,5 +1,5 @@
-const sql = require('mssql');
 const { getConnection } = require('../config/db');
+const { responderErrorInterno } = require('../utils/errores');
 
 /**
  * @fileoverview Controlador de gestión de usuarios.
@@ -21,17 +21,16 @@ const { getConnection } = require('../config/db');
 const obtenerSolicitudes = async (req, res) => {
     try {
         const pool = await getConnection();
-        const result = await pool.request().query(`
-            SELECT id_usuario, nombre, apellido, DNI, email, fecha_nacimiento,
-                   nombreEmprendimiento, reseña, id_estado
+        const result = await pool.query(`
+            SELECT id_usuario, nombre, apellido, "DNI", email, fecha_nacimiento,
+                   "nombreEmprendimiento", "reseña", id_estado
             FROM Usuario
             WHERE id_rol = 2 AND id_estado = 2
             ORDER BY id_usuario DESC
         `);
-        res.json(result.recordset);
+        res.json(result.rows);
     } catch (error) {
-        console.error('Error en obtenerSolicitudes:', error.message);
-        res.status(500).json({ error: 'Error interno: ' + error.message });
+        responderErrorInterno(res, error, 'obtenerSolicitudes');
     }
 };
 
@@ -47,17 +46,16 @@ const obtenerSolicitudes = async (req, res) => {
 const obtenerEmprendedoresActivos = async (req, res) => {
     try {
         const pool = await getConnection();
-        const result = await pool.request().query(`
-            SELECT id_usuario, nombre, apellido, DNI, email, fecha_nacimiento,
-                   nombreEmprendimiento, reseña, id_estado
+        const result = await pool.query(`
+            SELECT id_usuario, nombre, apellido, "DNI", email, fecha_nacimiento,
+                   "nombreEmprendimiento", "reseña", id_estado
             FROM Usuario
             WHERE id_rol = 2 AND id_estado = 1
-            ORDER BY nombreEmprendimiento ASC
+            ORDER BY "nombreEmprendimiento" ASC
         `);
-        res.json(result.recordset);
+        res.json(result.rows);
     } catch (error) {
-        console.error('Error en obtenerEmprendedoresActivos:', error.message);
-        res.status(500).json({ error: 'Error interno: ' + error.message });
+        responderErrorInterno(res, error, 'obtenerEmprendedoresActivos');
     }
 };
 
@@ -74,13 +72,13 @@ const aprobarEmprendedor = async (req, res) => {
     const { id } = req.params;
     try {
         const pool = await getConnection();
-        await pool.request()
-            .input('id', sql.Int, id)
-            .query(`UPDATE Usuario SET id_estado = 1 WHERE id_usuario = @id AND id_rol = 2`);
+        await pool.query(
+            `UPDATE Usuario SET id_estado = 1 WHERE id_usuario = $1 AND id_rol = 2`,
+            [id]
+        );
         res.json({ message: 'Emprendedor aprobado correctamente.' });
     } catch (error) {
-        console.error('Error en aprobarEmprendedor:', error.message);
-        res.status(500).json({ error: 'Error interno: ' + error.message });
+        responderErrorInterno(res, error, 'aprobarEmprendedor');
     }
 };
 
@@ -101,13 +99,13 @@ const rechazarEmprendedor = async (req, res) => {
         const pool = await getConnection();
         // Por ahora eliminamos el registro para no acumular solicitudes rechazadas.
         // Si se quiere historial, cambiar por UPDATE id_estado = 3 con un nuevo estado.
-        await pool.request()
-            .input('id', sql.Int, id)
-            .query(`DELETE FROM Usuario WHERE id_usuario = @id AND id_rol = 2 AND id_estado = 2`);
+        await pool.query(
+            `DELETE FROM Usuario WHERE id_usuario = $1 AND id_rol = 2 AND id_estado = 2`,
+            [id]
+        );
         res.json({ message: 'Solicitud rechazada y eliminada.' });
     } catch (error) {
-        console.error('Error en rechazarEmprendedor:', error.message);
-        res.status(500).json({ error: 'Error interno: ' + error.message });
+        responderErrorInterno(res, error, 'rechazarEmprendedor');
     }
 };
 

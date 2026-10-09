@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
     "test": "vitest run"
   },
   "keywords": [],
@@ -15,8 +17,10 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "mssql": "^12.3.1",
-    "multer": "^2.1.1"
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "multer": "^2.1.1",
+    "pg": "^8.23.1"
   },
   "devDependencies": {
     "vitest": "^4.1.8"

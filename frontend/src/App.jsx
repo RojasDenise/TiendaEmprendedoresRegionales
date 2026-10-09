@@ -1,8 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import DashboardLayout from './pages/DashboardLayout';
-import DashboardHome from './pages/DashboardHome';
+// Los nombres de archivo respetan mayúsculas/minúsculas: en Windows funciona igual,
+// pero en Linux (donde se hace el deploy) 'DashboardLayout' no encuentra 'Dashboardlayout.jsx'.
+import DashboardLayout from './pages/Dashboardlayout';
+import DashboardHome from './pages/Dashboardhome';
 import ListadoProductos from './pages/productos/ListadoProductos';
 import AgregarProducto from './pages/productos/AgregarProducto';
 import EditarProducto from './pages/productos/EditarProducto';

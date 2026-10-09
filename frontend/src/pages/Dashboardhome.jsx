@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { obtenerProductos, obtenerProductosEliminados, restaurarProducto } from '../services/productoService';
+import { UPLOADS_URL } from '../config';
 
 /**
  * @fileoverview Componente del panel de control del emprendedor autenticado.
@@ -12,7 +13,7 @@ import { obtenerProductos, obtenerProductosEliminados, restaurarProducto } from 
  */
 
 /** URL base para construir las rutas de las imágenes de productos. */
-const IMG_URL = 'http://localhost:5000/uploads/';
+const IMG_URL = UPLOADS_URL;
 
 /**
  * Componente DashboardHome.

@@ -5,4 +5,4 @@ Plataforma e-commerce regional diseñada para la digitalización de emprendimien
 
 * **/frontend**: Capa de Presentación desarrollada en React.
 * **/backend**: Capa de Negocio y Aplicación desarrollada en Node.js.
-* **/database**: Capa de Persistencia con scripts para SQL Server.
+* **/database**: Capa de Persistencia. Los scripts vigentes son los de PostgreSQL (`database/postgres`); los de SQL Server quedan como referencia.

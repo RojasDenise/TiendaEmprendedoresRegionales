@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_URL } from '../config';
 
 /**
  * @fileoverview Componente de registro de nuevos usuarios en la plataforma.
@@ -12,7 +13,7 @@ import { useNavigate, Link } from 'react-router-dom';
  */
 
 /** URL base de la API para las peticiones de autenticación. */
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = API_URL;
 
 /**
  * Componente Register.

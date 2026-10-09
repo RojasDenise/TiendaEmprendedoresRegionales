@@ -3,9 +3,10 @@ import {
   obtenerFacturas, agregarValoracion,
   obtenerMensajesReclamo, agregarReclamo, responderReclamo
 } from '../../services/clienteService';
+import { API_URL, UPLOADS_URL } from '../../config';
 
-const IMG_URL  = 'http://localhost:5000/uploads/';
-const BASE_URL = 'http://localhost:5000/api';
+const IMG_URL  = UPLOADS_URL;
+const BASE_URL = API_URL;
 
 const MOTIVOS = [
   'Producto defectuoso o dañado', 'No llegó lo pedido',

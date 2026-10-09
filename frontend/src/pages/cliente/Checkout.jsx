@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { obtenerCarrito, confirmarCompra } from '../../services/carritoService';
+import { UPLOADS_URL } from '../../config';
 
 /**
  * @fileoverview Página de checkout.
@@ -43,7 +44,7 @@ const FORMAS_PAGO = [
   },
 ];
 
-const IMG_URL = 'http://localhost:5000/uploads/';
+const IMG_URL = UPLOADS_URL;
 
 export default function Checkout() {
   const navigate   = useNavigate();

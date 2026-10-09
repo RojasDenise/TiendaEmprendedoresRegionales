@@ -1,4 +1,3 @@
-const sql = require('mssql');
 const { getConnection } = require('../config/db');
 
 /**
@@ -23,12 +22,10 @@ const { getConnection } = require('../config/db');
 const obtenerCarrito = async (id_cliente) => {
   const pool = await getConnection();
 
-  const result = await pool.request()
-    .input('id_cliente', sql.Int, parseInt(id_cliente))
-    .query(`
+  const result = await pool.query(`
       SELECT
         c.id_carrito,
-        ic.id_itemCarrito,
+        ic."id_itemCarrito",
         p.id_producto,
         p.nombre,
         p.descripcion,
@@ -40,10 +37,10 @@ const obtenerCarrito = async (id_cliente) => {
       FROM Carrito c
       INNER JOIN ItemCarrito ic ON c.id_carrito = ic.id_carrito
       INNER JOIN Producto     p  ON ic.id_producto = p.id_producto
-      WHERE c.id_cliente = @id_cliente
-    `);
+      WHERE c.id_cliente = $1
+    `, [parseInt(id_cliente)]);
 
-  return result.recordset;
+  return result.rows;
 };
 
 // ─────────────────────────────────────────────
@@ -65,73 +62,56 @@ const agregarAlCarrito = async ({ id_cliente, id_producto, cantidad }) => {
   const pool = await getConnection();
 
   // Verificar producto activo y stock
-  const productoResult = await pool.request()
-    .input('id_producto', sql.Int, parseInt(id_producto))
-    .query(`
+  const productoResult = await pool.query(`
       SELECT precio, stock
       FROM Producto
-      WHERE id_producto = @id_producto
+      WHERE id_producto = $1
         AND id_estado_prod = 1
-    `);
+    `, [parseInt(id_producto)]);
 
-  const producto = productoResult.recordset[0];
+  const producto = productoResult.rows[0];
   if (!producto) throw new Error('Producto no disponible');
   if (producto.stock < cantidad) throw new Error('Stock insuficiente');
 
   // Buscar o crear carrito
-  let carritoResult = await pool.request()
-    .input('id_cliente', sql.Int, parseInt(id_cliente))
-    .query(`
+  let carritoResult = await pool.query(`
       SELECT id_carrito
       FROM Carrito
-      WHERE id_cliente = @id_cliente
-    `);
+      WHERE id_cliente = $1
+    `, [parseInt(id_cliente)]);
 
   let id_carrito;
 
-  if (carritoResult.recordset.length === 0) {
-    const nuevoCarrito = await pool.request()
-      .input('id_cliente', sql.Int, parseInt(id_cliente))
-      .query(`
-        INSERT INTO Carrito (fecha_creacion, subTotal, id_cliente)
-        OUTPUT INSERTED.id_carrito
-        VALUES (GETDATE(), 0, @id_cliente)
-      `);
-    id_carrito = nuevoCarrito.recordset[0].id_carrito;
+  if (carritoResult.rows.length === 0) {
+    const nuevoCarrito = await pool.query(`
+        INSERT INTO Carrito (fecha_creacion, "subTotal", id_cliente)
+        VALUES (NOW(), 0, $1)
+        RETURNING id_carrito
+      `, [parseInt(id_cliente)]);
+    id_carrito = nuevoCarrito.rows[0].id_carrito;
   } else {
-    id_carrito = carritoResult.recordset[0].id_carrito;
+    id_carrito = carritoResult.rows[0].id_carrito;
   }
 
   // Verificar si el item ya existe en el carrito
-  const itemExistente = await pool.request()
-    .input('id_carrito',  sql.Int, id_carrito)
-    .input('id_producto', sql.Int, parseInt(id_producto))
-    .query(`
-      SELECT id_itemCarrito, cantidad
+  const itemExistente = await pool.query(`
+      SELECT "id_itemCarrito", cantidad
       FROM ItemCarrito
-      WHERE id_carrito  = @id_carrito
-        AND id_producto = @id_producto
-    `);
+      WHERE id_carrito  = $1
+        AND id_producto = $2
+    `, [id_carrito, parseInt(id_producto)]);
 
-  if (itemExistente.recordset.length > 0) {
-    await pool.request()
-      .input('id_itemCarrito', sql.Int, itemExistente.recordset[0].id_itemCarrito)
-      .input('cantidad',       sql.Int, parseInt(cantidad))
-      .query(`
+  if (itemExistente.rows.length > 0) {
+    await pool.query(`
         UPDATE ItemCarrito
-        SET cantidad = cantidad + @cantidad
-        WHERE id_itemCarrito = @id_itemCarrito
-      `);
+        SET cantidad = cantidad + $1
+        WHERE "id_itemCarrito" = $2
+      `, [parseInt(cantidad), itemExistente.rows[0].id_itemCarrito]);
   } else {
-    await pool.request()
-      .input('cantidad',    sql.Int,   parseInt(cantidad))
-      .input('precio',      sql.Float, producto.precio)
-      .input('id_producto', sql.Int,   parseInt(id_producto))
-      .input('id_carrito',  sql.Int,   id_carrito)
-      .query(`
+    await pool.query(`
         INSERT INTO ItemCarrito (cantidad, precio, id_producto, id_carrito)
-        VALUES (@cantidad, @precio, @id_producto, @id_carrito)
-      `);
+        VALUES ($1, $2, $3, $4)
+      `, [parseInt(cantidad), producto.precio, parseInt(id_producto), id_carrito]);
   }
 
   return { message: 'Producto agregado al carrito' };
@@ -151,22 +131,18 @@ const agregarAlCarrito = async ({ id_cliente, id_producto, cantidad }) => {
 const quitarDelCarrito = async (id_itemCarrito) => {
   const pool = await getConnection();
 
-  const itemResult = await pool.request()
-    .input('id_itemCarrito', sql.Int, parseInt(id_itemCarrito))
-    .query(`
+  const itemResult = await pool.query(`
       SELECT id_carrito
       FROM ItemCarrito
-      WHERE id_itemCarrito = @id_itemCarrito
-    `);
+      WHERE "id_itemCarrito" = $1
+    `, [parseInt(id_itemCarrito)]);
 
-  if (itemResult.recordset.length === 0) throw new Error('Item no encontrado');
+  if (itemResult.rows.length === 0) throw new Error('Item no encontrado');
 
-  await pool.request()
-    .input('id_itemCarrito', sql.Int, parseInt(id_itemCarrito))
-    .query(`
+  await pool.query(`
       DELETE FROM ItemCarrito
-      WHERE id_itemCarrito = @id_itemCarrito
-    `);
+      WHERE "id_itemCarrito" = $1
+    `, [parseInt(id_itemCarrito)]);
 
   return { message: 'Producto quitado del carrito' };
 };
@@ -185,108 +161,91 @@ const quitarDelCarrito = async (id_itemCarrito) => {
  * @returns {Promise<{message: string, id_factura: number}>}
  */
 const confirmarCompra = async ({ id_cliente, id_formaPago }) => {
-  const pool        = await getConnection();
-  const transaction = new sql.Transaction(pool);
+  const pool = await getConnection();
+
+  // Una transacción necesita usar siempre la MISMA conexión:
+  // se pide una al pool y se devuelve al final con release().
+  const client = await pool.connect();
 
   try {
-    await transaction.begin();
+    await client.query('BEGIN');
 
-    const carritoResult = await new sql.Request(transaction)
-      .input('id_cliente', sql.Int, parseInt(id_cliente))
-      .query(`
+    const carritoResult = await client.query(`
         SELECT id_carrito
         FROM Carrito
-        WHERE id_cliente = @id_cliente
-      `);
+        WHERE id_cliente = $1
+      `, [parseInt(id_cliente)]);
 
-    if (carritoResult.recordset.length === 0)
+    if (carritoResult.rows.length === 0)
       throw new Error('El cliente no tiene carrito');
 
-    const id_carrito = carritoResult.recordset[0].id_carrito;
+    const id_carrito = carritoResult.rows[0].id_carrito;
 
-    const itemsResult = await new sql.Request(transaction)
-      .input('id_carrito', sql.Int, id_carrito)
-      .query(`
-        SELECT id_itemCarrito, cantidad, precio, id_producto
+    const itemsResult = await client.query(`
+        SELECT "id_itemCarrito", cantidad, precio, id_producto
         FROM ItemCarrito
-        WHERE id_carrito = @id_carrito
-      `);
+        WHERE id_carrito = $1
+      `, [id_carrito]);
 
-    if (itemsResult.recordset.length === 0)
+    if (itemsResult.rows.length === 0)
       throw new Error('El carrito está vacío');
 
-    const total = itemsResult.recordset.reduce(
+    const total = itemsResult.rows.reduce(
       (acc, item) => acc + item.cantidad * item.precio,
       0
     );
 
-    const envioResult = await new sql.Request(transaction)
-      .query(`
+    const envioResult = await client.query(`
         INSERT INTO Envio (fecha_envio, fecha_entrega, id_estado_envio, id_tipo_envio)
-        OUTPUT INSERTED.id_envio
-        VALUES (GETDATE(), DATEADD(day, 7, GETDATE()), 3, 1)
+        VALUES (NOW(), NOW() + INTERVAL '7 days', 3, 1)
+        RETURNING id_envio
       `);
 
-    const id_envio = envioResult.recordset[0].id_envio;
+    const id_envio = envioResult.rows[0].id_envio;
 
-    const pedidoResult = await new sql.Request(transaction)
-      .input('id_cliente', sql.Int, parseInt(id_cliente))
-      .input('id_envio',   sql.Int, id_envio)
-      .query(`
-        INSERT INTO Pedido (fecha_pedido, id_estadoPedido, id_envio, id_cliente, id_direccion)
-        OUTPUT INSERTED.id_pedido
-        VALUES (GETDATE(), 2, @id_envio, @id_cliente, 1)
-      `);
+    const pedidoResult = await client.query(`
+        INSERT INTO Pedido (fecha_pedido, "id_estadoPedido", id_envio, id_cliente, id_direccion)
+        VALUES (NOW(), 2, $1, $2, 1)
+        RETURNING id_pedido
+      `, [id_envio, parseInt(id_cliente)]);
 
-    const id_pedido = pedidoResult.recordset[0].id_pedido;
+    const id_pedido = pedidoResult.rows[0].id_pedido;
 
-    const facturaResult = await new sql.Request(transaction)
-      .input('total',     sql.Float, total)
-      .input('id_pedido', sql.Int,   id_pedido)
-      .query(`
+    const facturaResult = await client.query(`
         INSERT INTO Factura (fecha, total, id_pedido)
-        OUTPUT INSERTED.id_factura
-        VALUES (GETDATE(), @total, @id_pedido)
-      `);
+        VALUES (NOW(), $1, $2)
+        RETURNING id_factura
+      `, [total, id_pedido]);
 
-    const id_factura = facturaResult.recordset[0].id_factura;
+    const id_factura = facturaResult.rows[0].id_factura;
 
-    for (const item of itemsResult.recordset) {
-      await new sql.Request(transaction)
-        .input('cantidad',        sql.Int,   item.cantidad)
-        .input('precio_unitario', sql.Float, item.precio)
-        .input('id_factura',      sql.Int,   id_factura)
-        .input('id_producto',     sql.Int,   item.id_producto)
-        .input('id_carrito',      sql.Int,   id_carrito)
-        .query(`
+    for (const item of itemsResult.rows) {
+      await client.query(`
           INSERT INTO DetalleFactura (cantidad, precio_unitario, id_factura, id_producto, id_carrito)
-          VALUES (@cantidad, @precio_unitario, @id_factura, @id_producto, @id_carrito)
-        `);
+          VALUES ($1, $2, $3, $4, $5)
+        `, [item.cantidad, item.precio, id_factura, item.id_producto, id_carrito]);
     }
 
-    await new sql.Request(transaction)
-      .input('montoTotal',   sql.Float, total)
-      .input('id_factura',   sql.Int,   id_factura)
-      .input('id_formaPago', sql.Int,   parseInt(id_formaPago))
-      .query(`
-        INSERT INTO Pago (fecha, montoTotal, id_factura, id_formaPago, id_estadoPago)
-        VALUES (GETDATE(), @montoTotal, @id_factura, @id_formaPago, 2)
-      `);
+    // Este INSERT dispara el trigger tr_ActualizarStockYEstado (descuenta stock)
+    await client.query(`
+        INSERT INTO Pago (fecha, "montoTotal", id_factura, "id_formaPago", "id_estadoPago")
+        VALUES (NOW(), $1, $2, $3, 2)
+      `, [total, id_factura, parseInt(id_formaPago)]);
 
-    await new sql.Request(transaction)
-      .input('id_carrito', sql.Int, id_carrito)
-      .query(`
+    await client.query(`
         DELETE FROM ItemCarrito
-        WHERE id_carrito = @id_carrito
-      `);
+        WHERE id_carrito = $1
+      `, [id_carrito]);
 
-    await transaction.commit();
+    await client.query('COMMIT');
 
     return { message: 'Compra realizada con éxito', id_factura };
 
   } catch (error) {
-    await transaction.rollback();
+    await client.query('ROLLBACK');
     throw error;
+  } finally {
+    client.release();
   }
 };
 

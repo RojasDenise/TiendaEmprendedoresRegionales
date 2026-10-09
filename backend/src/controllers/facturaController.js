@@ -1,4 +1,5 @@
 const facturaService = require('../services/facturaService');
+const { responderErrorInterno } = require('../utils/errores');
 
 // GET /api/facturas/cliente/:id_cliente
 const obtenerFacturasCliente = async (req, res) => {
@@ -10,8 +11,7 @@ const obtenerFacturasCliente = async (req, res) => {
     const facturas = await facturaService.obtenerFacturasPorCliente(parseInt(id_cliente));
     res.json(facturas);
   } catch (error) {
-    console.error('[facturaController]', error.message);
-    res.status(500).json({ error: error.message });
+    responderErrorInterno(res, error, 'obtenerFacturasCliente');
   }
 };
 

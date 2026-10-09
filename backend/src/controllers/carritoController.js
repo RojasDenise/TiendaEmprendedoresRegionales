@@ -1,4 +1,5 @@
 const carritoService = require('../services/carritoService');
+const { responderError, responderErrorInterno } = require('../utils/errores');
 
 const obtenerCarrito = async (req, res) => {
   try {
@@ -8,7 +9,7 @@ const obtenerCarrito = async (req, res) => {
 
     res.json(carrito);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderErrorInterno(res, error, 'obtenerCarrito');
   }
 };
 
@@ -18,7 +19,7 @@ const agregarAlCarrito = async (req, res) => {
 
     res.status(201).json(resultado);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    responderError(res, error, 400, 'agregarAlCarrito');
   }
 };
 
@@ -30,7 +31,7 @@ const quitarDelCarrito = async (req, res) => {
 
     res.json(resultado);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    responderError(res, error, 400, 'quitarDelCarrito');
   }
 };
 
@@ -40,7 +41,7 @@ const confirmarCompra = async (req, res) => {
 
     res.status(201).json(resultado);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    responderError(res, error, 400, 'confirmarCompra');
   }
 };
 

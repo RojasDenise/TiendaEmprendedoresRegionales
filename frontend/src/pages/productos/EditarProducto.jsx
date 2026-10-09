@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { obtenerCategorias, actualizarProducto } from '../../services/productoService';
+import { API_URL } from '../../config';
 
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = API_URL;
 
 /**
  * @fileoverview Componente para editar un producto existente.

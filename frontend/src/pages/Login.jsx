@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_URL } from '../config';
 
 /**
  * @fileoverview Componente de inicio de sesión de la plataforma.
@@ -10,7 +11,7 @@ import { useNavigate, Link } from 'react-router-dom';
  * @author Rojas Karen Denise; Sandoval María Victoria
  */
 
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = API_URL;
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', contraseña: '' });

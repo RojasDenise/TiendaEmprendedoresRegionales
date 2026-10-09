@@ -1,4 +1,5 @@
-const BASE_URL = 'http://localhost:5000/api';
+import { API_URL } from '../config';
+const BASE_URL = API_URL;
 
 // ─── Facturas ─────────────────────────────────────────────────────────────────
 export const obtenerFacturas = async (id_cliente) => {

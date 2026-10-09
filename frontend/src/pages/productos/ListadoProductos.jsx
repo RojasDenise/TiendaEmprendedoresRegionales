@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { obtenerProductos, eliminarProducto } from '../../services/productoService';
+import { UPLOADS_URL } from '../../config';
 
 /**
  * @fileoverview Componente para listar los productos del emprendedor autenticado.
@@ -11,7 +12,7 @@ import { obtenerProductos, eliminarProducto } from '../../services/productoServi
  * @author Rojas Karen Denise; Sandoval María Victoria
  */
 
-const IMG_URL = 'http://localhost:5000/uploads/';
+const IMG_URL = UPLOADS_URL;
 
 export default function ListadoProductos() {
   const [productos, setProductos] = useState([]);

@@ -1,4 +1,3 @@
-const sql = require('mssql');
 const { getConnection } = require('../config/db');
 
 const StockObservable = require("../observers/StockObservable");
@@ -30,29 +29,43 @@ const verificarStock = (producto) => {
 // SERVICIOS DE PRODUCTO
 // ====================================================================
 
+// Antes era el procedimiento almacenado sp_obtenerProductos.
+// Si id_usuario es null trae los productos activos de todos los emprendedores.
 const obtenerProductos = async (id_usuario = null) => {
   const pool = await getConnection();
-  const request = pool.request();
 
-  request.input(
-    'id_usuario',
-    sql.Int,
-    id_usuario ? parseInt(id_usuario) : null
-  );
+  const result = await pool.query(`
+    SELECT
+      p.id_producto,
+      p.nombre,
+      p.descripcion,
+      p.precio,
+      p.stock,
+      p.imagen,
+      p.id_categoria,
+      p.id_usuario,
+      p.id_estado_prod,
+      c.descripcion AS categoria_nombre,
+      CONCAT(u.nombre, ' ', u.apellido) AS nombre_usuario,
+      u."nombreEmprendimiento"
+    FROM Producto p
+    JOIN Categoria c ON p.id_categoria = c.id_categoria
+    LEFT JOIN Usuario u ON p.id_usuario = u.id_usuario
+    WHERE p.id_estado_prod = 1
+      AND ($1::int IS NULL OR p.id_usuario = $1::int)
+  `, [id_usuario ? parseInt(id_usuario) : null]);
 
-  const result = await request.execute('sp_obtenerProductos');
-
-  return result.recordset;
+  return result.rows;
 };
 
 const obtenerProductosEliminados = async (id_usuario = null) => {
   const pool = await getConnection();
-  const request = pool.request();
+  const params = [];
 
   let query = `
     SELECT p.*, 
            c.descripcion AS categoria_nombre,
-           u.nombreEmprendimiento
+           u."nombreEmprendimiento"
     FROM Producto p
     JOIN Categoria c ON p.id_categoria = c.id_categoria
     LEFT JOIN Usuario u ON p.id_usuario = u.id_usuario
@@ -60,52 +73,41 @@ const obtenerProductosEliminados = async (id_usuario = null) => {
   `;
 
   if (id_usuario) {
-    request.input('id_usuario', sql.Int, parseInt(id_usuario));
-    query += ' AND p.id_usuario = @id_usuario';
+    params.push(parseInt(id_usuario));
+    query += ' AND p.id_usuario = $1';
   }
 
   query += ' ORDER BY p.id_producto DESC';
-  const result = await request.query(query);
-  return result.recordset;
+  const result = await pool.query(query, params);
+  return result.rows;
 };
 
 const obtenerProductoPorId = async (id) => {
   const pool = await getConnection();
-  const result = await pool.request()
-    .input('id', sql.Int, parseInt(id))
-    .query(`
+  const result = await pool.query(`
       SELECT p.*, 
              c.descripcion AS categoria_nombre, 
              ep.descripcion AS estado_nombre,
              CONCAT(u.nombre, ' ', u.apellido) AS nombre_usuario,
-             u.nombreEmprendimiento
+             u."nombreEmprendimiento"
       FROM Producto p
       JOIN Categoria c ON p.id_categoria = c.id_categoria
       JOIN Estado_Producto ep ON p.id_estado_prod = ep.id_estado_prod
       LEFT JOIN Usuario u ON p.id_usuario = u.id_usuario
-      WHERE p.id_producto = @id AND p.id_estado_prod = 1
-    `);
-  return result.recordset[0] || null;
+      WHERE p.id_producto = $1 AND p.id_estado_prod = 1
+    `, [parseInt(id)]);
+  return result.rows[0] || null;
 };
 
 const crearProducto = async ({ nombre, descripcion, precio, stock, id_categoria, id_usuario, imagen }) => {
   const pool = await getConnection();
-  const result = await pool.request()
-    .input('nombre', sql.VarChar(200), nombre)
-    .input('descripcion', sql.VarChar(sql.MAX), descripcion)
-    .input('precio', sql.Decimal(10, 2), precio)
-    .input('stock', sql.Int, stock)
-    .input('id_categoria', sql.Int, id_categoria)
-    .input('id_usuario', sql.Int, id_usuario)
-    .input('estado', sql.Int, 1)
-    .input('imagen', sql.VarChar(sql.MAX), imagen)
-    .query(`
+  const result = await pool.query(`
       INSERT INTO Producto (nombre, descripcion, precio, stock, id_categoria, id_usuario, id_estado_prod, imagen)
-      OUTPUT INSERTED.*
-      VALUES (@nombre, @descripcion, @precio, @stock, @id_categoria, @id_usuario, @estado, @imagen)
-    `);
+      VALUES ($1, $2, $3, $4, $5, $6, 1, $7)
+      RETURNING *
+    `, [nombre, descripcion, precio, stock, id_categoria, id_usuario, imagen]);
 
-  const producto = result.recordset[0];
+  const producto = result.rows[0];
 
 const alertaStock = verificarStock(producto);
 
@@ -122,17 +124,29 @@ const actualizarProducto = async (
 
   const pool = await getConnection();
 
-  const result = await pool.request()
-    .input('id_producto', sql.Int, parseInt(id))
-    .input('nombre', sql.VarChar(50), nombre)
-    .input('descripcion', sql.VarChar(sql.MAX), descripcion)
-    .input('precio', sql.Decimal(10, 2), parseFloat(precio))
-    .input('stock', sql.Int, parseInt(stock))
-    .input('id_categoria', sql.Int, parseInt(id_categoria))
-    .input('imagen', sql.VarChar(sql.MAX), imagen || null)
-    .execute('sp_actualizarProducto');
+  // Antes era el procedimiento almacenado sp_actualizarProducto.
+  // COALESCE: si no se envía una imagen nueva, se conserva la que ya tenía.
+  const result = await pool.query(`
+      UPDATE Producto
+      SET nombre       = $2,
+          descripcion  = $3,
+          precio       = $4,
+          stock        = $5,
+          id_categoria = $6,
+          imagen       = COALESCE($7, imagen)
+      WHERE id_producto = $1
+      RETURNING *
+    `, [
+      parseInt(id),
+      nombre,
+      descripcion,
+      parseFloat(precio),
+      parseInt(stock),
+      parseInt(id_categoria),
+      imagen || null,
+    ]);
 
-const producto = result.recordset[0];
+const producto = result.rows[0];
 
 const alertaStock = verificarStock(producto);
 
@@ -143,18 +157,20 @@ return {
 };
 const eliminarProducto = async (id) => {
   const pool = await getConnection();
-  const result = await pool.request()
-    .input('id', sql.Int, parseInt(id))
-    .query('UPDATE Producto SET id_estado_prod = 2 WHERE id_producto = @id');
-  return result.rowsAffected[0] > 0;
+  const result = await pool.query(
+    'UPDATE Producto SET id_estado_prod = 2 WHERE id_producto = $1',
+    [parseInt(id)]
+  );
+  return result.rowCount > 0;
 };
 
 const restaurarProducto = async (id) => {
   const pool = await getConnection();
-  const result = await pool.request()
-    .input('id', sql.Int, parseInt(id))
-    .query('UPDATE Producto SET id_estado_prod = 1 WHERE id_producto = @id');
-  return result.rowsAffected[0] > 0;
+  const result = await pool.query(
+    'UPDATE Producto SET id_estado_prod = 1 WHERE id_producto = $1',
+    [parseInt(id)]
+  );
+  return result.rowCount > 0;
 };
 
 module.exports = {

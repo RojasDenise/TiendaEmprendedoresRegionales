@@ -6,7 +6,6 @@
  * @author Rojas Karen Denise; Sandoval María Victoria
  */
 
-const sql = require('mssql');
 const { getConnection } = require('../config/db');
 
 /**
@@ -52,21 +51,17 @@ const agregarValoracion = async ({
 
   const pool = await getConnection();
 
-  const clienteResult = await pool.request()
-    .input('id_cliente', sql.Int, parseInt(id_cliente))
-    .query(`
+  const clienteResult = await pool.query(`
       SELECT id_cliente
       FROM Cliente
-      WHERE id_cliente = @id_cliente
-    `);
+      WHERE id_cliente = $1
+    `, [parseInt(id_cliente)]);
 
-  if (clienteResult.recordset.length === 0) {
+  if (clienteResult.rows.length === 0) {
     throw new Error('Cliente no encontrado');
   }
 
-  const facturaResult = await pool.request()
-    .input('id_factura', sql.Int, parseInt(id_factura))
-    .query(`
+  const facturaResult = await pool.query(`
       SELECT 
         f.id_factura,
         p.id_cliente,
@@ -74,42 +69,36 @@ const agregarValoracion = async ({
       FROM Factura f
       INNER JOIN Pedido p ON f.id_pedido = p.id_pedido
       INNER JOIN Envio e ON p.id_envio = e.id_envio
-      WHERE f.id_factura = @id_factura
-    `);
+      WHERE f.id_factura = $1
+    `, [parseInt(id_factura)]);
 
-  if (facturaResult.recordset.length === 0) {
+  if (facturaResult.rows.length === 0) {
     throw new Error('Factura no encontrada');
   }
 
-  const productoResult = await pool.request()
-    .input('id_producto', sql.Int, parseInt(id_producto))
-    .query(`
+  const productoResult = await pool.query(`
       SELECT id_producto
       FROM Producto
-      WHERE id_producto = @id_producto
-    `);
+      WHERE id_producto = $1
+    `, [parseInt(id_producto)]);
 
-  if (productoResult.recordset.length === 0) {
+  if (productoResult.rows.length === 0) {
     throw new Error('Producto no encontrado');
   }
 
-  const factura = facturaResult.recordset[0];
+  const factura = facturaResult.rows[0];
 
-  const compraValida = await pool.request()
-    .input('id_factura', sql.Int, parseInt(id_factura))
-    .input('id_producto', sql.Int, parseInt(id_producto))
-    .input('id_cliente', sql.Int, parseInt(id_cliente))
-    .query(`
+  const compraValida = await pool.query(`
       SELECT 1
       FROM Factura f
       INNER JOIN Pedido p ON f.id_pedido = p.id_pedido
       INNER JOIN DetalleFactura df ON f.id_factura = df.id_factura
-      WHERE f.id_factura = @id_factura
-        AND p.id_cliente = @id_cliente
-        AND df.id_producto = @id_producto
-    `);
+      WHERE f.id_factura = $1
+        AND p.id_cliente = $2
+        AND df.id_producto = $3
+    `, [parseInt(id_factura), parseInt(id_cliente), parseInt(id_producto)]);
 
-  if (compraValida.recordset.length === 0) {
+  if (compraValida.rows.length === 0) {
     throw new Error('No puede valorar productos que no compró');
   }
 
@@ -135,35 +124,31 @@ const agregarValoracion = async ({
     throw new Error('El puntaje debe estar entre 1 y 5');
   }
 
-  const existe = await pool.request()
-    .input('id_factura', sql.Int, parseInt(id_factura))
-    .input('id_producto', sql.Int, parseInt(id_producto))
-    .input('id_cliente', sql.Int, parseInt(id_cliente))
-    .query(`
+  const existe = await pool.query(`
       SELECT 1
-      FROM Valoración
-      WHERE id_factura = @id_factura
-        AND id_producto = @id_producto
-        AND id_cliente = @id_cliente
-    `);
+      FROM Valoracion
+      WHERE id_factura = $1
+        AND id_producto = $2
+        AND id_cliente = $3
+    `, [parseInt(id_factura), parseInt(id_producto), parseInt(id_cliente)]);
 
-  if (existe.recordset.length > 0) {
+  if (existe.rows.length > 0) {
     throw new Error('Ya valoraste este producto para esta compra');
   }
 
-  await pool.request()
-    .input('puntaje', sql.Int, puntajeNumerico)
-    .input('comentario', sql.VarChar(255), comentario || null)
-    .input('fecha', sql.DateTime, new Date())
-    .input('id_cliente', sql.Int, parseInt(id_cliente))
-    .input('id_factura', sql.Int, parseInt(id_factura))
-    .input('id_producto', sql.Int, parseInt(id_producto))
-    .query(`
-      INSERT INTO Valoración
+  await pool.query(`
+      INSERT INTO Valoracion
       (puntaje, comentario, fecha, id_cliente, id_factura, id_producto)
       VALUES
-      (@puntaje, @comentario, @fecha, @id_cliente, @id_factura, @id_producto)
-    `);
+      ($1, $2, $3, $4, $5, $6)
+    `, [
+      puntajeNumerico,
+      comentario || null,
+      new Date(),
+      parseInt(id_cliente),
+      parseInt(id_factura),
+      parseInt(id_producto),
+    ]);
 
   return {
     mensaje: 'Valoración registrada con éxito'
@@ -189,27 +174,25 @@ const obtenerValoracionesPorProducto = async (id_producto) => {
 
   const pool = await getConnection();
 
-  const result = await pool.request()
-    .input('id_producto', sql.Int, parseInt(id_producto))
-    .query(`
+  const result = await pool.query(`
       SELECT
         v.id_valoracion,
         v.puntaje,
         v.comentario,
         v.fecha,
         CONCAT(c.nombre, ' ', c.apellido) AS nombre_cliente
-      FROM Valoración v
+      FROM Valoracion v
       JOIN Cliente c ON v.id_cliente = c.id_cliente
-      WHERE v.id_producto = @id_producto
+      WHERE v.id_producto = $1
       ORDER BY v.fecha DESC
-    `);
+    `, [parseInt(id_producto)]);
 
-  const total = result.recordset.length;
+  const total = result.rows.length;
 
   const promedio = total > 0
     ? parseFloat(
         (
-          result.recordset.reduce(
+          result.rows.reduce(
             (acc, v) => acc + v.puntaje,
             0
           ) / total
@@ -220,7 +203,7 @@ const obtenerValoracionesPorProducto = async (id_producto) => {
   return {
     promedio,
     total,
-    valoraciones: result.recordset
+    valoraciones: result.rows
   };
 };
 

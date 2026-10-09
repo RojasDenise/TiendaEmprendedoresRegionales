@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
+import { API_URL, UPLOADS_URL } from '../../config';
 
-const BASE_URL = 'http://localhost:5000/api';
-const IMG_URL  = 'http://localhost:5000/uploads/';
+const BASE_URL = API_URL;
+const IMG_URL  = UPLOADS_URL;
 
 // ─── ChatEmprendedor ──────────────────────────────────────────────────────────
 function ChatEmprendedor({ id_reclamo, estado, id_usuario, onMensajeEnviado, onResolver }) {

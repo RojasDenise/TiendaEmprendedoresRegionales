@@ -1,3 +1,4 @@
+import { API_URL } from '../config';
 /**
  * @fileoverview Servicio de acceso a la API para la gestión del carrito de compras.
  * Centraliza todas las peticiones HTTP relacionadas con el carrito:
@@ -7,7 +8,7 @@
  * @author Rojas Karen Denise; Sandoval María Victoria
  */
 
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = API_URL;
 
 /**
  * Obtiene el carrito del cliente con todos sus items.

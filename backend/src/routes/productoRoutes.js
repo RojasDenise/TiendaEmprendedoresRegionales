@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const productoController = require('../controllers/productoController');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { upload } = require('../config/upload');
+
 /**
  * @fileoverview Rutas para la gestión de productos.
  * Define los endpoints CRUD de productos, incluyendo soporte para
@@ -14,34 +13,9 @@ const fs = require('fs');
  */
 
 /**
- * Configuración del almacenamiento de imágenes con Multer.
- * Los archivos se guardan en `public/uploads/` con el nombre
- * compuesto por el timestamp actual más la extensión original del archivo.
- *
- * @type {multer.StorageEngine}
+ * `upload` viene de config/upload.js: solo acepta imágenes JPG, PNG o WEBP
+ * de hasta 5 MB y el servidor genera el nombre del archivo.
  */
-const uploadDir = path.join(__dirname, '../../public/uploads');
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
-
-/**
- * Instancia de Multer configurada con el almacenamiento en disco definido.
- * Se utiliza como middleware en las rutas de creación y actualización de productos.
- *
- * @type {multer.Multer}
- */
-const upload = multer({ storage });
 
 /**
  * @route GET /api/productos/eliminados

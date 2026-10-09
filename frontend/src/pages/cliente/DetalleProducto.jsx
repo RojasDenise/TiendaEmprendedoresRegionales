@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { obtenerProductoPorId } from '../../services/productoService';
 import { obtenerValoraciones, agregarValoracion, obtenerFacturas } from '../../services/clienteService';
 import { agregarAlCarrito } from '../../services/carritoService';
+import { UPLOADS_URL } from '../../config';
 
 /**
  * @fileoverview Detalle de un producto.
@@ -13,7 +14,7 @@ import { agregarAlCarrito } from '../../services/carritoService';
  * @author Rojas Karen Denise; Sandoval María Victoria
  */
 
-const IMG_URL = 'http://localhost:5000/uploads/';
+const IMG_URL = UPLOADS_URL;
 
 const getInitials = (nombre = '') =>
   nombre.trim().slice(0, 2).toUpperCase() || '??';

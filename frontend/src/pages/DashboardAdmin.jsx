@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../config';
 /**
  * @fileoverview Componente del panel de administración de la plataforma.
  * Muestra métricas globales, tabla de productos, emprendedores activos
@@ -9,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
  * @author Rojas Karen Denise; Sandoval María Victoria
  */
 
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = API_URL;
 
 export default function DashboardAdmin() {
   const [productos, setProductos] = useState([]);

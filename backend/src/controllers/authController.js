@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
-const sql = require('mssql');
 const { getConnection } = require('../config/db');
+const { responderErrorInterno } = require('../utils/errores');
 
 /**
  * @fileoverview Controlador de autenticación.
@@ -47,12 +47,14 @@ const iniciarSesion = async (req, res) => {
         const pool = await getConnection();
 
         // Buscamos en Usuario (Administradores y Emprendedores)
-        const resultUser = await pool.request()
-            .input('email', sql.VarChar, email)
-            .query('SELECT id_usuario, nombre, apellido, [contraseña], id_rol, id_estado FROM Usuario WHERE email = @email');
+        // LOWER(): el email no distingue mayúsculas de minúsculas (igual que antes en SQL Server)
+        const resultUser = await pool.query(
+            'SELECT id_usuario, nombre, apellido, "contraseña", id_rol, id_estado FROM Usuario WHERE LOWER(email) = LOWER($1)',
+            [email]
+        );
 
-        if (resultUser.recordset.length > 0) {
-            const user = resultUser.recordset[0];
+        if (resultUser.rows.length > 0) {
+            const user = resultUser.rows[0];
             const match = await bcrypt.compare(contraseña, user['contraseña']);
 
             if (match) {
@@ -66,12 +68,13 @@ const iniciarSesion = async (req, res) => {
         }
 
         // Buscamos en Cliente
-        const resultCliente = await pool.request()
-            .input('email', sql.VarChar, email)
-            .query('SELECT id_cliente AS id_usuario, nombre, apellido, [contraseña] FROM Cliente WHERE email = @email');
+        const resultCliente = await pool.query(
+            'SELECT id_cliente AS id_usuario, nombre, apellido, "contraseña" FROM Cliente WHERE LOWER(email) = LOWER($1)',
+            [email]
+        );
 
-        if (resultCliente.recordset.length > 0) {
-            const cliente = resultCliente.recordset[0];
+        if (resultCliente.rows.length > 0) {
+            const cliente = resultCliente.rows[0];
             const matchCliente = await bcrypt.compare(contraseña, cliente['contraseña']);
 
             if (matchCliente) {
@@ -84,8 +87,7 @@ const iniciarSesion = async (req, res) => {
         res.status(401).json({ message: "Credenciales incorrectas." });
 
     } catch (error) {
-        console.error("Error en iniciarSesion:", error.message);
-        res.status(500).json({ error: "Error de servidor: " + error.message });
+        responderErrorInterno(res, error, 'iniciarSesion');
     }
 };
 
@@ -133,6 +135,12 @@ const registrar = async (req, res) => {
         return res.status(400).json({ message: "Debe completar todos los campos del formulario." });
     }
 
+    // Solo se puede registrar como Emprendedor (2) o Cliente (3), nunca como Administrador.
+    // Antes, con otro valor la request quedaba colgada sin respuesta.
+    if (![2, 3].includes(parseInt(id_rol))) {
+        return res.status(400).json({ message: "Tipo de cuenta inválido." });
+    }
+
     // 2. Validación de edad mínima (16 años)
     const hoy = new Date();
     const cumple = new Date(fecha_nacimiento);
@@ -148,10 +156,10 @@ const registrar = async (req, res) => {
         const pool = await getConnection();
 
         // 3. Verificación de DNI duplicado en ambas tablas
-        const checkDniU = await pool.request().input('dni', sql.VarChar, DNI).query('SELECT id_usuario FROM Usuario WHERE DNI = @dni');
-        const checkDniC = await pool.request().input('dni', sql.VarChar, DNI).query('SELECT id_cliente FROM Cliente WHERE DNI = @dni');
+        const checkDniU = await pool.query('SELECT id_usuario FROM Usuario WHERE "DNI" = $1', [DNI]);
+        const checkDniC = await pool.query('SELECT id_cliente FROM Cliente WHERE "DNI" = $1', [DNI]);
 
-        if (checkDniU.recordset.length > 0 || checkDniC.recordset.length > 0) {
+        if (checkDniU.rows.length > 0 || checkDniC.rows.length > 0) {
             return res.status(409).json({ message: "El DNI ingresado ya pertenece a una cuenta activa." });
         }
 
@@ -162,42 +170,25 @@ const registrar = async (req, res) => {
         if (parseInt(id_rol) === 2) {
             // EMPRENDEDOR → Tabla Usuario, estado inicial: 2 (pendiente de aprobación)
             // Se agrega nombreEmprendimiento al INSERT
-            await pool.request()
-                .input('nombre', sql.VarChar, nombre)
-                .input('apellido', sql.VarChar, apellido)
-                .input('dni', sql.VarChar, DNI)
-                .input('fecha', sql.Date, fecha_nacimiento)
-                .input('email', sql.VarChar, email)
-                .input('pass', sql.VarChar, hash)
-                .input('nombreEmprendimiento', sql.VarChar, nombreEmprendimiento || '')
-                .input('resena', sql.VarChar, reseña || '')
-                .query(`
-                    INSERT INTO Usuario (nombre, apellido, DNI, fecha_nacimiento, email, [contraseña], id_rol, id_estado, nombreEmprendimiento, reseña)
-                    VALUES (@nombre, @apellido, @dni, @fecha, @email, @pass, 2, 2, @nombreEmprendimiento, @resena)
-                `);
+            await pool.query(`
+                    INSERT INTO Usuario (nombre, apellido, "DNI", fecha_nacimiento, email, "contraseña", id_rol, id_estado, "nombreEmprendimiento", "reseña")
+                    VALUES ($1, $2, $3, $4, $5, $6, 2, 2, $7, $8)
+                `, [nombre, apellido, DNI, fecha_nacimiento, email, hash, nombreEmprendimiento || '', reseña || '']);
 
             return res.status(201).json({ message: "Registro exitoso. Su solicitud de emprendedor está siendo revisada." });
 
         } else if (parseInt(id_rol) === 3) {
             // CLIENTE → Tabla Cliente
-            await pool.request()
-                .input('nombre', sql.VarChar, nombre)
-                .input('apellido', sql.VarChar, apellido)
-                .input('dni', sql.VarChar, DNI)
-                .input('fecha', sql.Date, fecha_nacimiento)
-                .input('email', sql.VarChar, email)
-                .input('pass', sql.VarChar, hash)
-                .query(`
-                    INSERT INTO Cliente (nombre, apellido, DNI, fecha_nacimiento, email, [contraseña])
-                    VALUES (@nombre, @apellido, @dni, @fecha, @email, @pass)
-                `);
+            await pool.query(`
+                    INSERT INTO Cliente (nombre, apellido, "DNI", fecha_nacimiento, email, "contraseña")
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                `, [nombre, apellido, DNI, fecha_nacimiento, email, hash]);
 
             return res.status(201).json({ message: "Registro exitoso. ¡Bienvenido a la tienda!" });
         }
 
     } catch (error) {
-        console.error("Error en registrar:", error.message);
-        res.status(500).json({ error: "Error interno: " + error.message });
+        responderErrorInterno(res, error, 'registrar');
     }
 };
 

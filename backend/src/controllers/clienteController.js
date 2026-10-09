@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
-const sql    = require('mssql');
 const { getConnection } = require('../config/db');
+const { responderErrorInterno } = require('../utils/errores');
 
 /**
  * @fileoverview Controlador de perfil del cliente.
@@ -21,21 +21,18 @@ const obtenerPerfil = async (req, res) => {
   const { id } = req.params;
   try {
     const pool   = await getConnection();
-    const result = await pool.request()
-      .input('id', sql.Int, parseInt(id))
-      .query(`
-        SELECT id_cliente, nombre, apellido, DNI, fecha_nacimiento, email
+    const result = await pool.query(`
+        SELECT id_cliente, nombre, apellido, "DNI", fecha_nacimiento, email
         FROM Cliente
-        WHERE id_cliente = @id
-      `);
+        WHERE id_cliente = $1
+      `, [parseInt(id)]);
 
-    if (result.recordset.length === 0)
+    if (result.rows.length === 0)
       return res.status(404).json({ message: 'Cliente no encontrado.' });
 
-    res.json(result.recordset[0]);
+    res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error en obtenerPerfil:', error.message);
-    res.status(500).json({ error: 'Error interno: ' + error.message });
+    responderErrorInterno(res, error, 'obtenerPerfil');
   }
 };
 
@@ -63,59 +60,46 @@ const editarPerfil = async (req, res) => {
       if (!contraseñaActual)
         return res.status(400).json({ message: 'Ingresá tu contraseña actual para cambiarla.' });
 
-      const result = await pool.request()
-        .input('id', sql.Int, parseInt(id))
-        .query(`SELECT [contraseña] FROM Cliente WHERE id_cliente = @id`);
+      const result = await pool.query(
+        `SELECT "contraseña" FROM Cliente WHERE id_cliente = $1`,
+        [parseInt(id)]
+      );
 
-      if (result.recordset.length === 0)
+      if (result.rows.length === 0)
         return res.status(404).json({ message: 'Cliente no encontrado.' });
 
-      const match = await bcrypt.compare(contraseñaActual, result.recordset[0]['contraseña']);
+      const match = await bcrypt.compare(contraseñaActual, result.rows[0]['contraseña']);
       if (!match)
         return res.status(401).json({ message: 'La contraseña actual es incorrecta.' });
 
       const hash = await bcrypt.hash(contraseñaNueva, 10);
-      await pool.request()
-        .input('id',             sql.Int,     parseInt(id))
-        .input('nombre',         sql.VarChar, nombre)
-        .input('apellido',       sql.VarChar, apellido)
-        .input('email',          sql.VarChar, email)
-        .input('pass',           sql.VarChar, hash)
-        .query(`
+      await pool.query(`
           UPDATE Cliente
-          SET nombre = @nombre,
-              apellido = @apellido,
-              email          = @email,
-              [contraseña]   = @pass
-          WHERE id_cliente = @id
-        `);
+          SET nombre       = $2,
+              apellido     = $3,
+              email        = $4,
+              "contraseña" = $5
+          WHERE id_cliente = $1
+        `, [parseInt(id), nombre, apellido, email, hash]);
     } else {
-      await pool.request()
-        .input('id',             sql.Int,     parseInt(id))
-        .input('nombre', sql.VarChar, nombre)
-        .input('apellido', sql.VarChar, apellido)
-        .input('email',          sql.VarChar, email)
-        .query(`
+      await pool.query(`
           UPDATE Cliente
-          SET nombre = @nombre,
-              apellido = @apellido,
-              email          = @email
-          WHERE id_cliente = @id
-        `);
+          SET nombre   = $2,
+              apellido = $3,
+              email    = $4
+          WHERE id_cliente = $1
+        `, [parseInt(id), nombre, apellido, email]);
     }
 
     // Devolver datos actualizados (sin contraseña)
-    const updated = await pool.request()
-      .input('id', sql.Int, parseInt(id))
-      .query(`
-        SELECT id_cliente, nombre, apellido, DNI, fecha_nacimiento, email
-        FROM Cliente WHERE id_cliente = @id
-      `);
+    const updated = await pool.query(`
+        SELECT id_cliente, nombre, apellido, "DNI", fecha_nacimiento, email
+        FROM Cliente WHERE id_cliente = $1
+      `, [parseInt(id)]);
 
-    res.json({ message: 'Perfil actualizado correctamente.', cliente: updated.recordset[0] });
+    res.json({ message: 'Perfil actualizado correctamente.', cliente: updated.rows[0] });
   } catch (error) {
-    console.error('Error en editarPerfil:', error.message);
-    res.status(500).json({ error: 'Error interno: ' + error.message });
+    responderErrorInterno(res, error, 'editarPerfil');
   }
 };
 
