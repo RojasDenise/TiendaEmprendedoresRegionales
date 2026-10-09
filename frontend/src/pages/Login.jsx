@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { API_URL } from '../config';
 
 /**
@@ -18,6 +18,13 @@ export default function Login() {
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
   const navigate = useNavigate();
+
+  // Si el visitante venía de una pantalla de la tienda (por ejemplo, un producto),
+  // después de ingresar como cliente vuelve ahí. Solo se aceptan rutas del catálogo.
+  const { state } = useLocation();
+  const volverA = typeof state?.volverA === 'string' && state.volverA.startsWith('/catalogo')
+    ? state.volverA
+    : '/catalogo';
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -55,7 +62,7 @@ export default function Login() {
       } else if (data.user.id_rol === 2) {
         navigate('/dashboard', { replace: true });
       } else if (data.user.id_rol === 3) {
-        navigate('/catalogo', { replace: true });
+        navigate(volverA, { replace: true });
       } else {
         sessionStorage.clear();
         setError('Rol de usuario no válido.');
@@ -135,9 +142,12 @@ export default function Login() {
 
         <p style={s.link}>
           ¿No tenés cuenta?{' '}
-          <Link to="/register" style={s.linkA}>
+          <Link to="/register" state={state} style={s.linkA}>
             Registrate
           </Link>
+        </p>
+        <p style={{ ...s.link, marginTop: '0.5rem' }}>
+          <Link to="/catalogo" style={s.linkA}>Volver al catálogo</Link>
         </p>
       </div>
     </div>

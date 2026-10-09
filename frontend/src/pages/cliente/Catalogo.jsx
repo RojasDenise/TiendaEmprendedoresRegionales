@@ -29,7 +29,8 @@ export default function Catalogo() {
 
   const navigate   = useNavigate();
   const user       = JSON.parse(sessionStorage.getItem('user') || 'null');
-  const id_cliente = user?.id_usuario;
+  // Solo un cliente con sesión tiene carrito; el catálogo se puede ver sin iniciar sesión.
+  const id_cliente = user?.id_rol === 3 ? user.id_usuario : null;
 
   useEffect(() => {
     Promise.all([obtenerProductos(), obtenerCategorias()])
@@ -48,7 +49,11 @@ export default function Catalogo() {
 
   const handleAgregar = async (e, id_producto) => {
     e.stopPropagation(); // evita que navegue al detalle
-    if (!id_cliente) { navigate('/login'); return; }
+    if (!id_cliente) {
+      // Visitante: recién acá se le pide crear una cuenta (o ingresar, desde esa pantalla).
+      navigate('/register', { state: { motivo: 'carrito', volverA: '/catalogo' } });
+      return;
+    }
     setAgregando(id_producto);
     try {
       await agregarAlCarrito(id_cliente, id_producto, 1);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { API_URL } from '../config';
 
 /**
@@ -32,9 +32,14 @@ const BASE_URL = API_URL;
  * @returns {JSX.Element} Formulario de registro con validaciones, campos condicionales y enlace al login.
  */
 export default function Register() {
+  // Si llegó desde "Agregar al carrito" siendo visitante, `state` trae el motivo
+  // y la pantalla a la que tiene que volver después de ingresar.
+  const { state } = useLocation();
+  const vieneDelCarrito = state?.motivo === 'carrito';
+
   const [form, setForm] = useState({
     nombre: '', apellido: '', DNI: '', fecha_nacimiento: '',
-    email: '', contraseña: '', id_rol: '2', nombreEmprendimiento: '', reseña: ''
+    email: '', contraseña: '', id_rol: vieneDelCarrito ? '3' : '2', nombreEmprendimiento: '', reseña: ''
   });
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
@@ -90,7 +95,7 @@ export default function Register() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Error al registrarse.');
       setExito(data.message);
-      setTimeout(() => navigate('/login'), 2000);
+      setTimeout(() => navigate('/login', { state }), 2000);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -127,6 +132,11 @@ export default function Register() {
         <h1 style={s.titulo}>Bienvenido a la Tienda</h1>
         <p style={s.subtitulo}>Completá tus datos para registrarte</p>
 
+        {vieneDelCarrito && !exito && (
+          <div style={s.alertaInfo}>
+            Para agregar productos al carrito necesitás una cuenta. Creala acá o, si ya tenés una, ingresá.
+          </div>
+        )}
         {error && <div style={s.alertaError}>{error}</div>}
         {exito && <div style={s.alertaExito}>{exito}</div>}
 
@@ -206,7 +216,10 @@ export default function Register() {
 
         <p style={s.link}>
           ¿Ya tenés cuenta?{' '}
-          <Link to="/login" style={s.linkA}>Ingresá</Link>
+          <Link to="/login" state={state} style={s.linkA}>Ingresá</Link>
+        </p>
+        <p style={{ ...s.link, marginTop: '0.5rem' }}>
+          <Link to="/catalogo" style={s.linkA}>Volver al catálogo</Link>
         </p>
       </div>
     </div>
@@ -259,6 +272,7 @@ const s = {
     border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 500,
     cursor: 'pointer', marginTop: '0.5rem', fontFamily: "'DM Sans', sans-serif",
   },
+  alertaInfo: { background: '#F1F5F9', border: '0.5px solid #CBD5E1', color: '#334155', borderRadius: 8, padding: '0.75rem 1rem', fontSize: 13, lineHeight: 1.45, marginBottom: '1.25rem' },
   link: { textAlign: 'center', marginTop: '1.25rem', fontSize: 13, color: '#888' },
   linkA: { color: '#111', fontWeight: 500, textDecoration: 'none' },
 };

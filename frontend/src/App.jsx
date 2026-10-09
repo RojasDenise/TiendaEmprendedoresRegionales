@@ -34,7 +34,7 @@ import './index.css';
  * la jerarquía de rutas anidadas según el tipo de usuario.
  *
  * Estructura de rutas:
- * - `/` → Redirige a `/login`.
+ * - `/` → Redirige a `/catalogo` (el catálogo es público: se puede ver sin iniciar sesión).
  * - `/login` → Pantalla de inicio de sesión.
  * - `/register` → Pantalla de registro de nuevos usuarios.
  * - `/dashboard` → Layout del emprendedor con rutas anidadas:
@@ -50,7 +50,7 @@ import './index.css';
  *   - `producto/:id` → Detalle de un producto.
  *   - `mis-compras` → Historial de compras del cliente.
  *   - `checkout` → Página de confirmación de compra.
- * - `*` → Cualquier ruta no definida redirige a `/login`.
+ * - `*` → Cualquier ruta no definida redirige a `/catalogo`.
  *
  * @component
  * @returns {JSX.Element} Árbol de rutas de la aplicación envuelto en BrowserRouter.
@@ -59,7 +59,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Navigate to="/catalogo" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
@@ -83,7 +83,7 @@ export default function App() {
           <Route path="perfil"   element={<Perfil />} />
         </Route>
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/catalogo" replace />} />
       </Routes>
     </BrowserRouter>
   );

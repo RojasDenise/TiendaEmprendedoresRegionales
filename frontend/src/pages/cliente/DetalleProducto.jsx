@@ -41,7 +41,8 @@ export default function DetalleProducto() {
   const { id } = useParams();
   const navigate = useNavigate();
   const user = JSON.parse(sessionStorage.getItem('user') || 'null');
-  const id_cliente = user?.id_usuario;
+  // Solo un cliente con sesión tiene carrito; el detalle se puede ver sin iniciar sesión.
+  const id_cliente = user?.id_rol === 3 ? user.id_usuario : null;
 
   const [producto,     setProducto]     = useState(null);
   const [valorData,    setValorData]     = useState({ promedio: 0, total: 0, valoraciones: [] });
@@ -66,7 +67,11 @@ export default function DetalleProducto() {
   };
 
   const handleAgregar = async () => {
-    if (!id_cliente) { navigate('/login'); return; }
+    if (!id_cliente) {
+      // Visitante: se le pide crear una cuenta y después vuelve a este producto.
+      navigate('/register', { state: { motivo: 'carrito', volverA: `/catalogo/producto/${id}` } });
+      return;
+    }
     setAgregando(true);
     try {
       await agregarAlCarrito(id_cliente, parseInt(id), 1);
@@ -196,8 +201,9 @@ export default function DetalleProducto() {
             </div>
           </div>
 
-          {/* Botón agregar al carrito — solo para clientes */}
-          {user?.id_rol === 3 && (
+          {/* Botón agregar al carrito — para clientes y para visitantes sin sesión
+              (al visitante lo lleva a crear una cuenta) */}
+          {(!user || user.id_rol === 3) && (
             <button
               onClick={handleAgregar}
               disabled={agregando || producto.stock === 0}

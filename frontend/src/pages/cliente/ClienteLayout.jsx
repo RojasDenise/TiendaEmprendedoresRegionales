@@ -1,12 +1,14 @@
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState, useCallback } from 'react';
 import { obtenerCarrito } from '../../services/carritoService';
 import Carrito from './Carrito';
 
+// `privado: true` = solo se muestra y se puede abrir con sesión de cliente.
 const navCliente = [
   {
     to: '/catalogo',
     end: true,
+    privado: false,
     label: 'Catálogo',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -20,6 +22,7 @@ const navCliente = [
   {
     to: '/catalogo/mis-compras',
     end: false,
+    privado: true,
     label: 'Mis compras',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -32,6 +35,7 @@ const navCliente = [
   {
     to: '/catalogo/perfil',
     end: false,
+    privado: true,
     label: 'Perfil',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -42,20 +46,31 @@ const navCliente = [
   },
 ];
 
+/** Rutas del layout que necesitan sesión de cliente. El catálogo y el detalle de producto son públicos. */
+const RUTAS_PRIVADAS = /^\/catalogo\/(mis-compras|checkout|perfil)(\/|$)/;
+
 export default function ClienteLayout() {
   const user       = JSON.parse(sessionStorage.getItem('user') || 'null');
-  const id_cliente = user?.id_usuario;
+  const esCliente  = user?.id_rol === 3;
+  const id_cliente = esCliente ? user.id_usuario : null;
+
+  const location     = useLocation();
+  const navigate     = useNavigate();
+  const rutaPrivada  = RUTAS_PRIVADAS.test(location.pathname);
+  // Admin y emprendedor tienen su propio panel: no navegan la tienda como clientes.
+  const panelPropio  = user && !esCliente ? (user.id_rol === 1 ? '/admin' : '/dashboard') : null;
 
   const [carritoAbierto, setCarritoAbierto] = useState(false);
   const [itemsCarrito,   setItemsCarrito]   = useState([]);
 
   useEffect(() => {
-    const usuarioGuardado = JSON.parse(sessionStorage.getItem('user') || 'null');
-    if (!usuarioGuardado || usuarioGuardado.id_rol !== 3) {
-      sessionStorage.clear();
-      window.location.replace('/login');
+    if (panelPropio) {
+      navigate(panelPropio, { replace: true });
+    } else if (!esCliente && rutaPrivada) {
+      // Visitante sin sesión en una pantalla privada: al login, y después vuelve a donde quería ir.
+      navigate('/login', { replace: true, state: { volverA: location.pathname } });
     }
-  }, []);
+  }, [panelPropio, esCliente, rutaPrivada, location.pathname, navigate]);
 
   const cargarCarrito = useCallback(async () => {
     if (!id_cliente) return;
@@ -83,8 +98,11 @@ export default function ClienteLayout() {
 
   const handleLogout = () => {
     sessionStorage.clear();
-    window.location.replace('/login');
+    window.location.replace('/catalogo');
   };
+
+  // Mientras se redirige no se dibuja nada, así la pantalla privada no llega a pedir datos.
+  if (panelPropio || (!esCliente && rutaPrivada)) return null;
 
   return (
     <div style={s.shell}>
@@ -111,7 +129,7 @@ export default function ClienteLayout() {
 
         <div style={s.navSection}>Tienda</div>
 
-        {navCliente.map((item) => (
+        {navCliente.filter((item) => esCliente || !item.privado).map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -126,7 +144,8 @@ export default function ClienteLayout() {
           </NavLink>
         ))}
 
-        {/* Botón carrito con badge */}
+        {/* Botón carrito con badge (solo con sesión de cliente) */}
+        {esCliente && (
         <button onClick={() => setCarritoAbierto(true)} style={s.btnCarrito}>
           <span style={{ opacity: 0.7, display: 'flex' }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -139,7 +158,9 @@ export default function ClienteLayout() {
             <span style={s.badge}>{totalItems > 99 ? '99+' : totalItems}</span>
           )}
         </button>
+        )}
 
+        {esCliente ? (
         <div style={s.sidebarFooter}>
           <div style={s.userRow}>
             <div style={s.avatar}>{initials}</div>
@@ -156,6 +177,13 @@ export default function ClienteLayout() {
             Cerrar sesión
           </button>
         </div>
+        ) : (
+        <div style={s.sidebarFooter}>
+          <div style={s.visitanteTexto}>Ingresá para comprar y ver tus pedidos.</div>
+          <Link to="/login" state={{ volverA: location.pathname }} style={s.btnIngresar}>Ingresar</Link>
+          <Link to="/register" state={{ volverA: location.pathname }} style={s.btnCrearCuenta}>Crear cuenta</Link>
+        </div>
+        )}
       </nav>
 
       <main style={s.main}>
@@ -294,6 +322,36 @@ const s = {
     fontSize: 12.5,
     color: '#555',
     fontWeight: 500,
+  },
+  visitanteTexto: {
+    fontSize: 12,
+    color: '#999',
+    lineHeight: 1.4,
+    marginBottom: '0.75rem',
+  },
+  btnIngresar: {
+    display: 'block',
+    textAlign: 'center',
+    background: '#111',
+    color: '#fff',
+    borderRadius: 8,
+    padding: '0.55rem 0',
+    fontSize: 13,
+    fontWeight: 500,
+    textDecoration: 'none',
+    marginBottom: 8,
+  },
+  btnCrearCuenta: {
+    display: 'block',
+    textAlign: 'center',
+    background: '#fff',
+    color: '#111',
+    border: '0.5px solid #ddd',
+    borderRadius: 8,
+    padding: '0.55rem 0',
+    fontSize: 13,
+    fontWeight: 500,
+    textDecoration: 'none',
   },
   btnLogout: {
     display: 'flex',
