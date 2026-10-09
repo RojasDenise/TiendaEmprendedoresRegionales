@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { obtenerCarrito, confirmarCompra } from '../../services/carritoService';
 import { urlImagen } from '../../config';
 
@@ -142,12 +142,12 @@ export default function Checkout() {
         <h1 style={s.titulo}>Checkout</h1>
       </div>
 
-      <div style={s.grid}>
+      <div className="tr-checkout-grid" style={s.grid}>
         {/* ── Columna izquierda: formulario ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {/* Dirección */}
-          <div style={s.card}>
+          <div className="tr-card-pad" style={s.card}>
             <h3 style={s.cardTitulo}>
               <span style={s.step}>1</span> Dirección de entrega
             </h3>
@@ -161,7 +161,7 @@ export default function Checkout() {
           </div>
 
           {/* Forma de pago */}
-          <div style={s.card}>
+          <div className="tr-card-pad" style={s.card}>
             <h3 style={s.cardTitulo}>
               <span style={s.step}>2</span> Forma de pago
             </h3>
@@ -246,7 +246,7 @@ export default function Checkout() {
 
         {/* ── Columna derecha: resumen ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={s.card}>
+          <div className="tr-card-pad" style={s.card}>
             <h3 style={s.cardTitulo}>Resumen del pedido</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
               {items.map(item => (
@@ -298,7 +298,9 @@ export default function Checkout() {
           </button>
 
           <p style={{ fontSize: 11.5, color: '#bbb', textAlign: 'center', margin: 0 }}>
-            Al confirmar aceptás los términos y condiciones de la plataforma.
+            Al confirmar aceptás los{' '}
+            <Link to="/terminos" target="_blank" style={{ color: '#888', textDecoration: 'underline' }}>términos y condiciones</Link>{' '}
+            de la plataforma.
           </p>
         </div>
       </div>

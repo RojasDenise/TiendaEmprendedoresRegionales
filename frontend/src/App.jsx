@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 // Los nombres de archivo respetan mayúsculas/minúsculas: en Windows funciona igual,
@@ -16,6 +17,9 @@ import MisCompras from './pages/cliente/MisCompras';
 import Checkout from './pages/cliente/Checkout';
 import Perfil from './pages/cliente/Perfil';
 import Reclamos from './pages/reclamo/reclamo';
+import PoliticaPrivacidad from './pages/legal/PoliticaPrivacidad';
+import TerminosCondiciones from './pages/legal/TerminosCondiciones';
+import Arrepentimiento from './pages/legal/Arrepentimiento';
 import './index.css';
 
 /**
@@ -34,9 +38,10 @@ import './index.css';
  * la jerarquía de rutas anidadas según el tipo de usuario.
  *
  * Estructura de rutas:
- * - `/` → Redirige a `/catalogo` (el catálogo es público: se puede ver sin iniciar sesión).
+ * - `/` → Landing page pública (presenta la tienda y lleva al catálogo, que se puede ver sin iniciar sesión).
  * - `/login` → Pantalla de inicio de sesión.
  * - `/register` → Pantalla de registro de nuevos usuarios.
+ * - `/privacidad`, `/terminos`, `/arrepentimiento` → Páginas legales públicas.
  * - `/dashboard` → Layout del emprendedor con rutas anidadas:
  *   - index → Panel de control del emprendedor.
  *   - `productos` → Listado de productos.
@@ -59,9 +64,14 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/catalogo" replace />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        {/* Páginas legales: públicas, se leen sin iniciar sesión */}
+        <Route path="/privacidad" element={<PoliticaPrivacidad />} />
+        <Route path="/terminos" element={<TerminosCondiciones />} />
+        <Route path="/arrepentimiento" element={<Arrepentimiento />} />
 
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<DashboardHome />} />

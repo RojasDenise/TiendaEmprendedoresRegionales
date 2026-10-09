@@ -138,7 +138,7 @@ export default function AgregarProducto() {
         </div>
       )}
 
-      <div style={s.card}>
+      <div className="tr-form-card" style={s.card}>
         <form onSubmit={handleSubmit}>
           <div style={s.campo}>
             <label style={s.label}>Nombre del producto *</label>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { obtenerProductos, obtenerCategorias } from '../../services/productoService';
 import { agregarAlCarrito } from '../../services/carritoService';
 import { urlImagen } from '../../config';
@@ -20,7 +20,9 @@ const getInitials = (nombre = '') =>
 export default function Catalogo() {
   const [productos,   setProductos]   = useState([]);
   const [categorias,  setCategorias]  = useState([]);
-  const [catActiva,   setCatActiva]   = useState('todos');
+  // La landing puede abrir el catálogo con una categoría ya elegida.
+  const location = useLocation();
+  const [catActiva,   setCatActiva]   = useState(location.state?.categoria ?? 'todos');
   const [busqueda,    setBusqueda]    = useState('');
   const [cargando,    setCargando]    = useState(true);
   const [agregando,   setAgregando]   = useState(null); // id_producto en proceso
@@ -79,13 +81,13 @@ export default function Catalogo() {
     <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
 
       {toastMsg && (
-        <div style={{ ...s.toast, background: toastOk ? '#111' : '#DC2626' }}>
+        <div className="tr-toast" style={{ ...s.toast, background: toastOk ? '#111' : '#DC2626' }}>
           {toastOk ? '✓' : '✕'} {toastMsg}
         </div>
       )}
 
       {/* Topbar */}
-      <div style={s.topbar}>
+      <div className="tr-topbar" style={s.topbar}>
         <div>
           <h1 style={s.titulo}>Catálogo</h1>
           <p style={s.subtitulo}>{productos.length} productos disponibles</p>
@@ -127,13 +129,13 @@ export default function Catalogo() {
       ) : productosFiltrados.length === 0 ? (
         <div style={s.empty}>No se encontraron productos.</div>
       ) : (
-        <div style={s.grid}>
+        <div className="tr-grid-productos" style={s.grid}>
           {productosFiltrados.map(p => (
             <div key={p.id_producto} style={s.card}
               onClick={() => navigate(`/catalogo/producto/${p.id_producto}`)}>
 
               {/* Imagen */}
-              <div style={s.imgWrap}>
+              <div className="tr-card-img" style={s.imgWrap}>
                 {p.imagen ? (
                   <img
                     src={urlImagen(p.imagen)}
@@ -154,7 +156,7 @@ export default function Catalogo() {
               </div>
 
               {/* Info */}
-              <div style={s.cardBody}>
+              <div className="tr-card-body" style={s.cardBody}>
                 <div style={s.categoriaBadge}>{p.categoria_nombre}</div>
                 <div style={s.nombre}>{p.nombre}</div>
 

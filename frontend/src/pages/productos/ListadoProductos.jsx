@@ -71,7 +71,7 @@ export default function ListadoProductos() {
 
       {/* Toast */}
       {toast && (
-        <div style={{
+        <div className="tr-toast" style={{
           ...s.toast,
           background: toast.tipo === 'error' ? '#FEE2E2' : '#DCFCE7',
           color: toast.tipo === 'error' ? '#991B1B' : '#166534',
@@ -89,7 +89,7 @@ export default function ListadoProductos() {
       )}
 
       {/* Topbar */}
-      <div style={s.topbar}>
+      <div className="tr-topbar" style={s.topbar}>
         <div>
           <h1 style={s.titulo}>Productos</h1>
           <p style={s.subtitulo}>{productos.length} productos en tu catálogo</p>
@@ -123,6 +123,7 @@ export default function ListadoProductos() {
             {busqueda ? `Sin resultados para "${busqueda}"` : 'Aún no tenés productos.'}
           </div>
         ) : (
+          <div className="tr-tabla-wrap">
           <table style={s.table}>
             <thead>
               <tr>
@@ -189,6 +190,7 @@ export default function ListadoProductos() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

@@ -148,7 +148,7 @@ export default function DetalleProducto() {
     <div style={{ fontFamily: "'DM Sans', sans-serif", maxWidth: 780 }}>
 
       {toastMsg && (
-        <div style={{ ...s.toast, background: toastOk ? '#111' : '#DC2626' }}>
+        <div className="tr-toast" style={{ ...s.toast, background: toastOk ? '#111' : '#DC2626' }}>
           {toastOk ? '✓' : '✕'} {toastMsg}
         </div>
       )}
@@ -157,8 +157,8 @@ export default function DetalleProducto() {
         ← Volver al catálogo
       </button>
 
-      <div style={s.cardPrincipal}>
-        <div style={s.imgWrap}>
+      <div className="tr-detalle-card" style={s.cardPrincipal}>
+        <div className="tr-detalle-img" style={s.imgWrap}>
           {producto.imagen ? (
             <img src={urlImagen(producto.imagen)} alt={producto.nombre} style={s.img}
               onError={e => { e.target.style.display = 'none'; }} />
@@ -173,7 +173,7 @@ export default function DetalleProducto() {
           )}
         </div>
 
-        <div style={s.info}>
+        <div className="tr-detalle-info" style={s.info}>
           <div style={s.categoriaBadge}>{producto.categoria_nombre}</div>
           <h1 style={s.nombre}>{producto.nombre}</h1>
           <p style={s.descripcion}>{producto.descripcion}</p>

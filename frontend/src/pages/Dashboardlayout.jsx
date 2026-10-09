@@ -1,4 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { PieLegal } from './legal/LegalLayout';
 import { useEffect } from 'react';
 
 /**
@@ -95,9 +96,9 @@ export default function DashboardLayout({ rol }) {
   };
 
   return (
-    <div style={s.shell}>
-      <nav style={s.sidebar}>
-        <div style={s.brand}>
+    <div className="tr-shell" style={s.shell}>
+      <nav className="tr-sidebar" style={s.sidebar}>
+        <div className="tr-brand" style={s.brand}>
           <div style={s.brandIcon}>
             <svg width="18" height="18" viewBox="0 0 32 32" fill="none">
               <path
@@ -121,12 +122,14 @@ export default function DashboardLayout({ rol }) {
 
           <div>
             <div style={s.brandName}>Tienda de Emprendedores Regionales</div>
-            <div style={s.brandSub}>{isAdmin ? 'Administración' : 'Panel Emprendedor'}</div>
+            <div className="tr-brand-sub" style={s.brandSub}>{isAdmin ? 'Administración' : 'Panel Emprendedor'}</div>
           </div>
         </div>
 
-        <div style={s.navSection}>General</div>
+        <div className="tr-nav-section" style={s.navSection}>General</div>
 
+        {/* En pantallas chicas este bloque pasa a ser una fila de pestañas (ver responsive.css) */}
+        <div className="tr-nav">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
@@ -141,26 +144,28 @@ export default function DashboardLayout({ rol }) {
             {item.label}
           </NavLink>
         ))}
+        </div>
 
-        <div style={s.sidebarFooter}>
-          <div style={s.userRow}>
+        <div className="tr-footer" style={s.sidebarFooter}>
+          <div className="tr-user" style={s.userRow}>
             <div style={s.avatar}>{initials}</div>
-            <div style={s.userName}>{user ? `${user.nombre || ''} ${user.apellido || ''}`.trim() : 'Usuario'} </div>
+            <div className="tr-user-name" style={s.userName}>{user ? `${user.nombre || ''} ${user.apellido || ''}`.trim() : 'Usuario'} </div>
           </div>
 
-          <button onClick={handleLogout} style={s.btnLogout}>
+          <button onClick={handleLogout} style={s.btnLogout} className="tr-logout" title="Cerrar sesión" aria-label="Cerrar sesión">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <polyline points="16 17 21 12 16 7" />
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
-            Cerrar sesión
+            <span className="tr-logout-text">Cerrar sesión</span>
           </button>
         </div>
       </nav>
 
-      <main style={s.main}>
+      <main className="tr-main" style={s.main}>
         <Outlet />
+        <PieLegal />
       </main>
     </div>
   );

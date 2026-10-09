@@ -115,7 +115,7 @@ export default function Perfil() {
     <div style={{ fontFamily: "'DM Sans', sans-serif", maxWidth: 560 }}>
 
       {toast.msg && (
-        <div style={{ ...s.toast, background: toast.ok ? '#111' : '#DC2626' }}>
+        <div className="tr-toast" style={{ ...s.toast, background: toast.ok ? '#111' : '#DC2626' }}>
           {toast.ok ? '✓' : '✕'} {toast.msg}
         </div>
       )}

@@ -1,0 +1,137 @@
+/*
+ * Ajustes para pantallas chicas (celulares y tablets).
+ *
+ * Los componentes definen su diseño de escritorio con estilos en línea
+ * (los objetos `s = {...}` al final de cada archivo). Un estilo en línea no
+ * puede tener media queries, así que los cambios para pantallas chicas viven
+ * acá y se enganchan con una clase `tr-...` puesta en el elemento.
+ *
+ * Por eso casi todas las reglas llevan `!important`: es la única forma de que
+ * una regla de CSS le gane a un estilo en línea. Fuera de este archivo no hace
+ * falta usarlo.
+ *
+ * Cortes: 900px (tablet) y 640px (celular).
+ */
+
+/* En escritorio el contenedor de la navegación no altera el diseño. */
+.tr-nav { display: contents; }
+
+/* Las tablas anchas se desplazan dentro de su propia caja, no mueven la página. */
+.tr-tabla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+img { max-width: 100%; }
+
+/* =========================================================================
+   Tablet y celular: la barra lateral pasa a ser una barra superior
+   ========================================================================= */
+@media (max-width: 900px) {
+  .tr-shell { flex-direction: column !important; }
+
+  .tr-sidebar {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    padding: 0.6rem 1rem 0 !important;
+    border-right: none !important;
+    border-bottom: 0.5px solid #e8e8e8 !important;
+    z-index: 50;
+  }
+
+  .tr-brand { order: 1; flex: 1 1 0; min-width: 0; padding: 0 !important; }
+  .tr-brand-sub { letter-spacing: 0.06em !important; }
+  .tr-nav-section { display: none !important; }
+
+  /* Usuario y cerrar sesión: arriba a la derecha, compactos */
+  .tr-footer {
+    order: 2;
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+  .tr-user { margin: 0 !important; }
+  .tr-user-name, .tr-logout-text, .tr-visit-text { display: none !important; }
+  .tr-logout { padding: 8px !important; }
+  .tr-visit-btn {
+    margin: 0 !important;
+    padding: 0.45rem 0.8rem !important;
+    font-size: 12.5px !important;
+    white-space: nowrap;
+  }
+
+  /* Navegación: fila de pestañas que se desplaza si no entra */
+  .tr-nav {
+    order: 3;
+    display: flex;
+    width: 100%;
+    gap: 2px;
+    margin-top: 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tr-nav::-webkit-scrollbar { display: none; }
+  .tr-nav > a, .tr-nav > button {
+    flex: 0 0 auto;
+    width: auto !important;
+    padding: 0.55rem 0.8rem !important;
+    border-radius: 8px 8px 0 0 !important;
+    white-space: nowrap;
+  }
+
+  .tr-main { padding: 1.25rem 1rem 2rem !important; overflow-y: visible !important; min-width: 0; }
+}
+
+/* =========================================================================
+   Tablet y celular: contenido
+   ========================================================================= */
+@media (max-width: 900px) {
+  /* Checkout: el resumen del pedido baja debajo del formulario */
+  .tr-checkout-grid { grid-template-columns: minmax(0, 1fr) !important; }
+
+  /* Reclamos: la lista arriba y la conversación debajo */
+  .tr-reclamos-layout { grid-template-columns: minmax(0, 1fr) !important; }
+
+  /* Tablas: conservan un ancho legible y se desplazan de costado */
+  .tr-tabla-wrap > table { min-width: 640px; }
+
+  /* Al saltar a la conversación de un reclamo, que no quede tapada por la barra superior */
+  .tr-reclamo-detalle { scroll-margin-top: 110px; }
+}
+
+@media (max-width: 640px) {
+  /* Encabezados de página: el título y el botón se acomodan en dos renglones si hace falta */
+  .tr-topbar { flex-wrap: wrap !important; gap: 12px !important; }
+
+  /* Tarjetas de métricas: de 4 columnas a 2 (la destacada ocupa el renglón entero) */
+  .tr-metricas { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+
+  /* Catálogo: dos productos por fila */
+  .tr-grid-productos { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+  .tr-card-img { height: 120px !important; }
+  .tr-card-body { padding: 0.7rem 0.75rem !important; }
+
+  /* Detalle de producto: la foto arriba y los datos debajo */
+  .tr-detalle-card { flex-direction: column !important; gap: 0 !important; }
+  .tr-detalle-img { width: 100% !important; min-width: 0 !important; height: 240px !important; }
+  .tr-detalle-info { padding: 1.1rem !important; }
+
+  /* Formularios y tarjetas: menos margen interno */
+  .tr-form-card { padding: 1.25rem !important; }
+  .tr-card-pad { padding: 1.1rem !important; }
+  .tr-auth-page { align-items: flex-start !important; padding: 1rem !important; }
+  .tr-auth-card { padding: 1.5rem 1.25rem !important; border: none !important; }
+
+  /* Avisos flotantes: de lado a lado, sin taparse con el borde */
+  .tr-toast { left: 16px !important; right: 16px !important; bottom: 16px !important; text-align: center; justify-content: center; }
+}
+
+/* Celulares angostos: las pestañas van sin ícono para que entren las cuatro */
+@media (max-width: 480px) {
+  .tr-nav > a > span:first-child, .tr-nav > button > span:first-child { display: none !important; }
+  .tr-nav > a, .tr-nav > button { padding: 0.55rem 0.7rem !important; }
+}

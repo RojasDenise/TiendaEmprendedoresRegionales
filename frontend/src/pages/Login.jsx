@@ -76,8 +76,8 @@ export default function Login() {
   };
 
   return (
-    <div style={s.page}>
-      <div style={s.card}>
+    <div className="tr-auth-page" style={s.page}>
+      <div className="tr-auth-card" style={s.card}>
         <div style={s.brand}>
           <div style={s.brandIcon}>
             <svg width="18" height="18" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -148,6 +148,11 @@ export default function Login() {
         </p>
         <p style={{ ...s.link, marginTop: '0.5rem' }}>
           <Link to="/catalogo" style={s.linkA}>Volver al catálogo</Link>
+        </p>
+        <p style={{ ...s.link, marginTop: '1rem', fontSize: 12 }}>
+          <Link to="/privacidad" style={{ color: '#999' }}>Política de privacidad</Link>
+          {' · '}
+          <Link to="/terminos" style={{ color: '#999' }}>Términos y condiciones</Link>
         </p>
       </div>
     </div>

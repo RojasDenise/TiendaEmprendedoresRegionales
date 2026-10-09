@@ -1,0 +1,194 @@
+TIENDA DE EMPRENDEDORES REGIONALES — GUÍA DE DISEÑO COMPLETA
+Fuente: RojasDenise/TiendaEmprendedoresRegionales, rama main (d2bf9ac) — frontend/src
+Generado: 9 de octubre de 2026
+========================================================================
+
+1. ESTILO GENERAL
+------------------------------------------------------------------------
+Interfaz sobria y editorial: negro (#111111) sobre blanco y un fondo cálido
+(#F7F6F3). Títulos en serif (DM Serif Display), texto en DM Sans, bordes de
+0.5px y color sólo para estados (éxito, error, en curso, pendiente).
+No hay color de acento: el botón primario siempre es negro con texto blanco.
+
+2. COLORES
+------------------------------------------------------------------------
+ink              #111111              La tinta de la marca. Títulos y texto principal sobre surface y canvas (18.9:1), fondo de botones primarios, chip de filtro activo, avatares, badge del carrito y el cuadrado de la marca.
+surface          #ffffff              Fondo de cards, sidebar, inputs, modales y de las páginas de Login/Registro. También el texto sobre ink y sobre danger.
+canvas           #f7f6f3              Fondo cálido de la app (shell del catálogo y paneles), placeholder de imágenes de producto, ítem de navegación activo y botón secundario 'Editar'.
+canvas-warm      #f5f4f0              Variante cálida de canvas para bloques dentro de cards (resúmenes, filas destacadas).
+surface-row      #f8f8f8              Hover y filas alternas de tablas sobre surface.
+surface-muted    #f5f5f5              Fondos neutros de bloques secundarios (miniaturas, contenedores de imagen en tablas).
+surface-subtle   #fafafa              Fondo de cabeceras de tabla y zonas de chat sobre surface.
+text-strong      #333333              Texto fuerte secundario sobre surface (12.6:1).
+text-label       #444444              Labels de formularios (13px 500) sobre surface (9.7:1).
+text-body        #555555              Texto de cuerpo secundario, nombre de usuario en la sidebar, botón 'Editar' (7.5:1 sobre surface).
+text-muted       #666666              Texto de chips de filtro inactivos y descripciones (5.7:1 sobre surface).
+text-soft        #777777              Nombre del emprendedor en las cards de producto. 4.48:1 sobre surface: apenas por debajo de 4.5:1, el código lo usa a 12px; queda tal cual el repo.
+text-subtle      #888888              Subtítulos de Login, ítems de navegación inactivos, links secundarios. 3.5:1 sobre surface — no llega a 4.5:1 para texto chico; valor del repo, conservado.
+text-faint       #999999              Texto de ayuda ('Ingresá para comprar…'), botón 'Cerrar sesión'. 2.9:1 — por debajo del mínimo; valor del repo.
+text-meta        #aaaaaa              Subtítulos de página, categoría de producto, labels de KPI, estados vacíos. 2.3:1 — no cumple contraste; valor del repo, usarlo sólo en texto decorativo.
+text-section     #bbbbbb              Títulos de sección en mayúsculas de la sidebar ('TIENDA'). 1.9:1 — no cumple contraste; valor del repo.
+line-strong      #cccccc              Bordes de íconos/placeholder y separadores más marcados.
+line-input       #dddddd              Borde de inputs, buscador, chips de filtro y botón secundario 'Crear cuenta' (0.5px).
+line-field       #e0e0e0              Borde de inputs y textareas en Checkout, Perfil y chat; botón 'Volver'; switch apagado.
+line-soft        #e5e5e5              Borde de la card de Login/Registro.
+line-sidebar     #e8e8e8              Borde derecho de la sidebar (0.5px).
+line-card        #ebebeb              Borde de cards de producto y de KPI (0.5px).
+line-divider     #f0f0f0              Divisores internos (pie de sidebar, filas de tabla).
+success-bg       #dcfce7              Fondo de badge 'Entregado'/'Resuelto'/'Activo' y alertas de éxito.
+success-text     #166534              Texto sobre success-bg (6.5:1) y del botón 'Marcar resuelto'.
+success-border   #bbf7d0              Borde de alertas de éxito y botón 'Marcar resuelto'.
+danger           #dc2626              Botón destructivo (cancelar compra), toast de error, valor de KPI en alerta. Texto surface encima: 4.8:1.
+danger-bg        #fee2e2              Fondo de alertas de error y badges 'Cancelado'/'Agotado'.
+danger-text      #991b1b              Texto sobre danger-bg (6.8:1) y botón 'Rechazar'.
+danger-border    #fecaca              Borde de alertas de error y del botón 'Rechazar'.
+info-bg          #dbeafe              Fondo de badge 'En camino'/'Respondido'.
+info-text        #1e40af              Texto sobre info-bg (7.2:1) y info-soft.
+info-soft        #eff6ff              Fondo del botón 'Ver chat' del reclamo.
+info-border      #bfdbfe              Borde del botón 'Ver chat'.
+warning-bg       #fef9c3              Fondo de badge 'En preparación'/'Pendiente'.
+warning-text     #854d0e              Texto sobre warning-bg (6.4:1).
+rating           #f59e0b              Estrellas de valoración (relleno y trazo). Es un ícono, no texto: 2.2:1 sobre surface, por debajo de 3:1; valor del repo.
+rating-bg        #fffbeb              Fondo del botón 'Valorar'.
+rating-text      #92400e              Texto del botón 'Valorar' sobre rating-bg (6.8:1).
+rating-border    #fde68a              Borde del botón 'Valorar'.
+overlay          rgba(0,0,0,0.4)      Fondo detrás del panel lateral del carrito.
+overlay-strong   rgba(0,0,0,0.45)     Fondo detrás de los modales (valorar, reclamo).
+on-ink-muted     rgba(255,255,255,0.5) Label de la card KPI destacada (fondo ink).
+on-ink-line      rgba(255,255,255,0.12) Separadores y bordes dentro de bloques con fondo ink.
+
+Contraste sobre blanco (WCAG, mínimo 4.5:1 para texto chico):
+  #111 18.9 | #333 12.6 | #444 9.7 | #555 7.5 | #666 5.7  -> cumplen
+  #777 4.48 | #888 3.5 | #999 2.9 | #AAA 2.3 | #BBB 1.9   -> no cumplen
+
+3. TIPOGRAFÍA
+------------------------------------------------------------------------
+Familias (Google Fonts, no vienen en el repo):
+  Serif: "DM Serif Display", serif  -> títulos y números grandes (peso 400)
+  Sans:  "DM Sans", sans-serif      -> todo lo demás (pesos 400, 500, 600)
+Import:
+  https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap
+
+[Display — serif]
+  kpi-hero          32px / 400 (interlineado 1)  — Valor de la card KPI destacada (fondo ink, texto surface).
+  kpi               28px / 400 (interlineado 1)  — Valores de las cards KPI de los paneles.
+  page-title        26px / 400  — Título de cada página (Catálogo, Mis compras) y de Login/Registro.
+  product-title     22px / 400  — Nombre del producto en el detalle.
+  total             22px / 600  — Total a pagar en el Checkout (en el carrito: 20px 600).
+  detail-title      20px / 400  — Título del detalle de un reclamo.
+  section-title     18px / 400  — Secciones dentro del detalle de producto (Valoraciones).
+  brand-name        18px / 500  — Nombre de la tienda junto a la marca en Login/Registro (15px en la sidebar).
+  card-title        17px / 400  — Título de cards de Checkout y Perfil y subtítulo de tablas.
+
+[Texto — sans]
+  price-detail      22px / 500  — Precio en el detalle de producto.
+  price             15px / 500  — Precio en la card de producto.
+  body-lg           14px / 400  — Inputs y botón principal de Login; nombre de producto en card (con 500).
+  body            13.5px / 400 (interlineado 1.5)  — Tamaño base de la app: navegación, buscador, inputs de Checkout/Perfil, toasts.
+  body-sm           13px / 400  — Labels (con 500), alertas, chips de filtro, botones de la sidebar.
+  caption         12.5px / 400  — Subtítulo de página y nombre de usuario.
+  small             12px / 400  — Botón 'Agregar', nombre del emprendedor, textos de ayuda.
+  badge             11px / 500  — Badges de estado (con radio 20px y padding 2px 8px).
+  eyebrow         10.5px / 500 (tracking 0.08em, MAYÚSCULAS)  — Labels de KPI, en MAYÚSCULAS.
+  category          10px / 500 (tracking 0.07em, MAYÚSCULAS)  — Categoría sobre el nombre del producto, en MAYÚSCULAS.
+  overline          10px / 500 (tracking 0.1em, MAYÚSCULAS)  — Títulos de sección de la sidebar, en MAYÚSCULAS.
+
+4. ESPACIADO
+------------------------------------------------------------------------
+gap-4            4px                              Separación mínima (título–subtítulo: margen 4px).
+gap-6            6px                              Label–input dentro de un campo; ícono–texto en botones chicos.
+gap-8            8px                              Entre chips de filtro, avatar–nombre, botones apilados.
+gap-10           10px                             Ícono–texto en la navegación; marca–nombre.
+gap-12           12px                             Entre elementos de una fila de acciones.
+gap-14           14px                             Separación de bloques en modales.
+gap-16           16px                             Grilla de productos y topbar.
+space-2xs        0.5rem                           Margen chico entre controles (8px).
+space-xs         0.75rem                          Margen bajo filas de usuario y textos de ayuda (12px).
+space-sm         1rem                             Margen entre campos de formulario (16px).
+space-md         1.25rem                          Padding horizontal de la sidebar y margen bajo la topbar (20px).
+space-lg         1.5rem                           Margen bajo los filtros (24px).
+space-xl         2rem                             Padding de la zona principal y horizontal de la card de Login (32px).
+space-2xl        2.5rem                           Padding vertical de la card de Login (40px).
+space-3xl        3rem                             Estados vacíos (48px).
+space-4xl        4rem                             Padding de pantallas de carga (64px).
+
+5. BORDES REDONDEADOS
+------------------------------------------------------------------------
+radius-6         6px                              Elementos chicos (miniaturas).
+radius-7         7px                              Botones chicos: 'Agregar', 'Rechazar'.
+radius-8         8px                              EL radio por defecto: botones, inputs, alertas, buscador.
+radius-9         9px                              Inputs y textareas de Checkout, Perfil y chat.
+radius-10        10px                             Cuadrado de la marca y toasts.
+radius-12        12px                             Cards de producto y de KPI.
+radius-14        14px                             Cards grandes de paneles y modales.
+radius-16        16px                             Card de Login/Registro.
+radius-pill      20px                             Chips de filtro y badges de estado.
+radius-circle    50%                              Avatares y badge del carrito.
+
+6. SOMBRAS
+------------------------------------------------------------------------
+shadow-toast     0 4px 16px rgba(0,0,0,0.18)      Toasts flotantes. La interfaz casi no usa sombras: separa con bordes de 0.5px.
+shadow-drawer    -8px 0 32px rgba(0,0,0,0.1)      Panel lateral del carrito.
+
+7. GROSOR DE BORDE
+------------------------------------------------------------------------
+border-hairline  0.5px                            Todos los bordes de la interfaz (cards, inputs, sidebar, chips).
+
+8. COMPONENTES / PATRONES
+------------------------------------------------------------------------
+Botón primario    fondo #111, texto #FFF, 14px/500 (o 13px/500), radio 8px,
+                  padding 0.7rem (Login) / 0.55rem 0 (sidebar), sin borde.
+Botón chico       "Agregar": #111, texto #FFF, 12px/500, padding 5px 12px, radio 7px.
+Botón secundario  fondo #FFF, borde 0.5px #DDD, texto #111, 13px/500, radio 8px.
+Botón destructivo fondo #DC2626, texto #FFF.
+Chip de filtro    #FFF, borde 0.5px #DDD, texto #666, 13px, padding 5px 14px,
+                  radio 20px. Activo: fondo y borde #111, texto #FFF.
+Input             #FFF, borde 0.5px #DDD, radio 8px, padding 0.6rem 0.8rem,
+                  14px, texto #111, sin outline. Label 13px/500 #444, gap 6px.
+Buscador          input de 200px con ícono a la izquierda (padding-left 32px), 13.5px.
+Card de producto  #FFF, borde 0.5px #EBEBEB, radio 12px. Imagen 160px de alto
+                  sobre #F7F6F3 (object-fit cover). Cuerpo padding 0.9rem 1rem:
+                  categoría 10px/500 MAYÚSC. #AAA tracking 0.07em; nombre 14px/500
+                  #111; avatar 20px #111 + emprendedor 12px #777; precio 15px/500
+                  + botón "Agregar". Grilla: repeat(auto-fill, minmax(220px,1fr)), gap 16px.
+Card KPI          #FFF, borde 0.5px #EBEBEB, radio 12px, padding 1.1rem 1.25rem.
+                  Label 10.5px/500 MAYÚSC. #AAA tracking 0.08em; valor serif 28px
+                  interlineado 1. Destacada: fondo #111, label rgba(255,255,255,.5),
+                  valor serif 32px blanco.
+Badge de estado   11px/500, padding 2px 8px, radio 20px:
+                    Entregado / Resuelto / Activo   #DCFCE7 + #166534
+                    En camino / Respondido          #DBEAFE + #1E40AF
+                    En preparación / Pendiente      #FEF9C3 + #854D0E
+                    Cancelado / Agotado             #FEE2E2 + #991B1B
+Alerta            radio 8px, padding 0.65rem 0.9rem, 13px, borde 0.5px:
+                    error  #FEE2E2 / #991B1B / borde #FECACA
+                    éxito  #DCFCE7 / #166534 / borde #BBF7D0
+Toast             fijo abajo a la derecha (24px), #111 (ok) o #DC2626 (error),
+                  texto #FFF 13.5px, padding 0.75rem 1.25rem, radio 10px,
+                  sombra 0 4px 16px rgba(0,0,0,.18).
+Sidebar           220px, #FFF, borde derecho 0.5px #E8E8E8, padding 1.25rem 0.
+                  Sección: 10px/500 MAYÚSC. #BBB tracking 0.1em. Ítem: 13.5px #888,
+                  padding 0.55rem 1.25rem, gap 10px; activo: fondo #F7F6F3, #111,
+                  500, radio 0 8px 8px 0. Avatar 30px circular #111.
+Card de Login     máx. 400px, padding 2.5rem 2rem, borde 0.5px #E5E5E5, radio 16px.
+                  Título serif 26px, subtítulo 13.5px #888.
+Modal / overlay   fondo rgba(0,0,0,.45) (modales) o rgba(0,0,0,.4) (carrito);
+                  panel del carrito con sombra -8px 0 32px rgba(0,0,0,.1).
+Valoración        estrellas #F59E0B; botón "Valorar" #FFFBEB / #92400E / borde #FDE68A.
+Layout tienda     sidebar fija 220px + main con fondo #F7F6F3 y padding 2rem.
+
+9. MARCA E ÍCONOS
+------------------------------------------------------------------------
+Marca: bolsa de compras blanca dentro de un cuadrado #111 con esquinas
+redondeadas (frontend/favicon.svg). En la app: cuadrado de 36px, radio 10px,
+al lado del nombre en DM Serif Display (18px en Login, 15px en sidebar).
+Íconos: SVG de trazo estilo Feather, viewBox 24x24, fill none,
+stroke currentColor, grosor 1.8, a 14-15px, opacidad 0.7 en la navegación.
+Sin emoji ni ilustraciones.
+
+10. TONO DE LOS TEXTOS
+------------------------------------------------------------------------
+Español rioplatense con voseo: "Ingresá para comprar y ver tus pedidos."
+Botones en infinitivo: Agregar, Ingresar, Valorar, Ver chat, Crear cuenta.
+Títulos cortos con mayúscula inicial: Catálogo, Mis compras, Perfil.
+Precios: "$ 12.400". Estados siempre escritos, no sólo con color.

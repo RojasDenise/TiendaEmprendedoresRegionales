@@ -62,7 +62,7 @@ useEffect(() => {
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
       {/* Topbar */}
-      <div style={s.topbar}>
+      <div className="tr-topbar" style={s.topbar}>
         <div>
           <h1 style={s.titulo}>Panel de administración</h1>
           <p style={s.subtitulo}>Resumen general de la plataforma</p>
@@ -70,7 +70,7 @@ useEffect(() => {
       </div>
 
       {/* Métricas */}
-      <div style={s.metricas}>
+      <div className="tr-metricas" style={s.metricas}>
         <div style={{ ...s.card, ...s.cardHero }}>
           <div style={s.cardHeader}>
             <div style={{ ...s.cardIcon, background: 'rgba(255,255,255,0.12)' }}>
@@ -162,6 +162,7 @@ function TablaProductos({ productos }) {
           <div style={s.tablaSubtitulo}>Todos los productos de la plataforma</div>
         </div>
       </div>
+      <div className="tr-tabla-wrap">
       <table style={s.table}>
         <thead>
           <tr>
@@ -187,6 +188,7 @@ function TablaProductos({ productos }) {
           {productos.length === 0 && <FilaVacia cols={5} mensaje="No hay productos registrados" />}
         </tbody>
       </table>
+      </div>
     </>
   );
 }
@@ -200,6 +202,7 @@ function TablaEmprendedores({ emprendedores }) {
           <div style={s.tablaSubtitulo}>Cuentas habilitadas para operar</div>
         </div>
       </div>
+      <div className="tr-tabla-wrap">
       <table style={s.table}>
         <thead>
           <tr>
@@ -221,6 +224,7 @@ function TablaEmprendedores({ emprendedores }) {
           {emprendedores.length === 0 && <FilaVacia cols={5} mensaje="No hay emprendedores activos" />}
         </tbody>
       </table>
+      </div>
     </>
   );
 }
@@ -234,6 +238,7 @@ function TablaSolicitudes({ solicitudes, onAprobar, onRechazar }) {
           <div style={s.tablaSubtitulo}>Emprendedores esperando aprobación</div>
         </div>
       </div>
+      <div className="tr-tabla-wrap">
       <table style={s.table}>
         <thead>
           <tr>
@@ -262,6 +267,7 @@ function TablaSolicitudes({ solicitudes, onAprobar, onRechazar }) {
           {solicitudes.length === 0 && <FilaVacia cols={5} mensaje="No hay solicitudes pendientes" />}
         </tbody>
       </table>
+      </div>
     </>
   );
 }

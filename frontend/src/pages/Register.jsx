@@ -44,6 +44,8 @@ export default function Register() {
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
   const [cargando, setCargando] = useState(false);
+  // Aceptación de la política de privacidad y los términos: obligatoria para crear la cuenta.
+  const [acepta, setAcepta] = useState(false);
   const navigate = useNavigate();
 
   /**
@@ -86,11 +88,17 @@ export default function Register() {
       return;
     }
 
+    if (!acepta) {
+      setError('Para crear la cuenta tenés que aceptar la Política de privacidad y los Términos y condiciones.');
+      setCargando(false);
+      return;
+    }
+
     try {
       const res = await fetch(`${BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, id_rol: parseInt(form.id_rol) }),
+        body: JSON.stringify({ ...form, id_rol: parseInt(form.id_rol), aceptaTerminos: acepta }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Error al registrarse.');
@@ -115,8 +123,8 @@ export default function Register() {
   const maxDate = fechaMaxima.toISOString().split('T')[0];
 
   return (
-    <div style={s.page}>
-      <div style={s.card}>
+    <div className="tr-auth-page" style={s.page}>
+      <div className="tr-auth-card" style={s.card}>
         <div style={s.brand}>
           <div style={s.brandIcon}>
             <svg width="18" height="18" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -209,6 +217,24 @@ export default function Register() {
             </>
           )}
 
+          {/* Los enlaces abren en otra pestaña para no perder lo que ya se cargó en el formulario */}
+          <label style={s.acepta}>
+            <input
+              type="checkbox"
+              name="aceptaTerminos"
+              checked={acepta}
+              onChange={(e) => setAcepta(e.target.checked)}
+              style={s.aceptaCheck}
+            />
+            <span>
+              Leí y acepto la{' '}
+              <Link to="/privacidad" target="_blank" style={s.aceptaLink}>Política de privacidad</Link>
+              {' '}y los{' '}
+              <Link to="/terminos" target="_blank" style={s.aceptaLink}>Términos y condiciones</Link>,
+              incluido que mis datos se guarden en servidores fuera de Argentina.
+            </span>
+          </label>
+
           <button type="submit" disabled={cargando} style={s.btn}>
             {cargando ? 'Registrando...' : 'Crear cuenta'}
           </button>
@@ -272,6 +298,9 @@ const s = {
     border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 500,
     cursor: 'pointer', marginTop: '0.5rem', fontFamily: "'DM Sans', sans-serif",
   },
+  acepta: { display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 12.5, lineHeight: 1.5, color: '#555', margin: '0.25rem 0 1.1rem', cursor: 'pointer' },
+  aceptaCheck: { marginTop: 3, width: 16, height: 16, flexShrink: 0, accentColor: '#111', cursor: 'pointer' },
+  aceptaLink: { color: '#111', fontWeight: 500, textDecoration: 'underline' },
   alertaInfo: { background: '#F1F5F9', border: '0.5px solid #CBD5E1', color: '#334155', borderRadius: 8, padding: '0.75rem 1rem', fontSize: 13, lineHeight: 1.45, marginBottom: '1.25rem' },
   link: { textAlign: 'center', marginTop: '1.25rem', fontSize: 13, color: '#888' },
   linkA: { color: '#111', fontWeight: 500, textDecoration: 'none' },

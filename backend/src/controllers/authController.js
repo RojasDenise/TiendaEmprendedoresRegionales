@@ -3,6 +3,13 @@ const { getConnection } = require('../config/db');
 const { responderErrorInterno } = require('../utils/errores');
 
 /**
+ * Versión de la Política de Privacidad y los Términos que se acepta al registrarse.
+ * Tiene que coincidir con `version` en frontend/src/pages/legal/datosLegales.js.
+ * Queda guardada junto a la cuenta, como constancia de qué texto aceptó cada persona.
+ */
+const VERSION_TERMINOS = '2026-10-09';
+
+/**
  * @fileoverview Controlador de autenticación.
  * Maneja el inicio de sesión y registro de usuarios (Emprendedores y Clientes),
  * operando sobre dos tablas distintas: `Usuario` y `Cliente`.
@@ -122,13 +129,13 @@ const iniciarSesion = async (req, res) => {
  *
  * @returns {Promise<void>}
  *
- * @throws {400} Si faltan campos obligatorios o el usuario es menor de 16 años.
+ * @throws {400} Si faltan campos obligatorios, no se aceptaron los términos o el usuario es menor de 16 años.
  * @throws {409} Si el DNI ya está registrado en alguna tabla.
  * @throws {500} Si ocurre un error interno en el servidor.
  */
 const registrar = async (req, res) => {
     // Se agrega nombreEmprendimiento a la desestructuración
-    const { nombre, apellido, DNI, fecha_nacimiento, email, contraseña, id_rol, nombreEmprendimiento, reseña } = req.body;
+    const { nombre, apellido, DNI, fecha_nacimiento, email, contraseña, id_rol, nombreEmprendimiento, reseña, aceptaTerminos } = req.body;
 
     // 1. Validación de campos obligatorios
     if (!nombre || !apellido || !DNI || !fecha_nacimiento || !email || !contraseña || !id_rol) {
@@ -139,6 +146,12 @@ const registrar = async (req, res) => {
     // Antes, con otro valor la request quedaba colgada sin respuesta.
     if (![2, 3].includes(parseInt(id_rol))) {
         return res.status(400).json({ message: "Tipo de cuenta inválido." });
+    }
+
+    // Sin aceptación expresa de la política de privacidad y los términos no se crea la cuenta
+    // (el consentimiento es lo que habilita a guardar los datos personales).
+    if (aceptaTerminos !== true) {
+        return res.status(400).json({ message: "Para crear la cuenta tenés que aceptar la Política de privacidad y los Términos y condiciones." });
     }
 
     // 2. Validación de edad mínima (16 años)
@@ -171,18 +184,18 @@ const registrar = async (req, res) => {
             // EMPRENDEDOR → Tabla Usuario, estado inicial: 2 (pendiente de aprobación)
             // Se agrega nombreEmprendimiento al INSERT
             await pool.query(`
-                    INSERT INTO Usuario (nombre, apellido, "DNI", fecha_nacimiento, email, "contraseña", id_rol, id_estado, "nombreEmprendimiento", "reseña")
-                    VALUES ($1, $2, $3, $4, $5, $6, 2, 2, $7, $8)
-                `, [nombre, apellido, DNI, fecha_nacimiento, email, hash, nombreEmprendimiento || '', reseña || '']);
+                    INSERT INTO Usuario (nombre, apellido, "DNI", fecha_nacimiento, email, "contraseña", id_rol, id_estado, "nombreEmprendimiento", "reseña", acepto_terminos_en, version_terminos)
+                    VALUES ($1, $2, $3, $4, $5, $6, 2, 2, $7, $8, NOW(), $9)
+                `, [nombre, apellido, DNI, fecha_nacimiento, email, hash, nombreEmprendimiento || '', reseña || '', VERSION_TERMINOS]);
 
             return res.status(201).json({ message: "Registro exitoso. Su solicitud de emprendedor está siendo revisada." });
 
         } else if (parseInt(id_rol) === 3) {
             // CLIENTE → Tabla Cliente
             await pool.query(`
-                    INSERT INTO Cliente (nombre, apellido, "DNI", fecha_nacimiento, email, "contraseña")
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                `, [nombre, apellido, DNI, fecha_nacimiento, email, hash]);
+                    INSERT INTO Cliente (nombre, apellido, "DNI", fecha_nacimiento, email, "contraseña", acepto_terminos_en, version_terminos)
+                    VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7)
+                `, [nombre, apellido, DNI, fecha_nacimiento, email, hash, VERSION_TERMINOS]);
 
             return res.status(201).json({ message: "Registro exitoso. ¡Bienvenido a la tienda!" });
         }

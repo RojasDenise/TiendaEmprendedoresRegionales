@@ -169,6 +169,15 @@ export default function Reclamos() {
   const [cargando,     setCargando]     = useState(true);
   const [filtro,       setFiltro]       = useState('todos');
   const [seleccionado, setSeleccionado] = useState(null);
+  const detalleRef = useRef(null);
+
+  // En pantallas chicas la conversación queda debajo de la lista:
+  // al elegir un reclamo se desplaza la página hasta ella.
+  const mostrarDetalleEnMovil = () => {
+    if (window.matchMedia('(max-width: 900px)').matches) {
+      setTimeout(() => detalleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+    }
+  };
   const [detalle,      setDetalle]      = useState(null);
   const [msgExito,     setMsgExito]     = useState('');
   const [msgError,     setMsgError]     = useState('');
@@ -220,14 +229,14 @@ export default function Reclamos() {
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      <div style={s.topbar}>
+      <div className="tr-topbar" style={s.topbar}>
         <div>
           <h1 style={s.titulo}>Reclamos</h1>
           <p style={s.subtitulo}>Gestioná los reclamos recibidos de tus clientes</p>
         </div>
       </div>
 
-      <div style={s.metricas}>
+      <div className="tr-metricas" style={s.metricas}>
         <div style={{ ...s.card, ...s.cardHero }}>
           <div style={s.cardHeader}>
             <div style={{ ...s.cardIcon, background: 'rgba(255,255,255,0.12)' }}>
@@ -257,7 +266,7 @@ export default function Reclamos() {
         />
       </div>
 
-      <div style={s.layout}>
+      <div className="tr-reclamos-layout" style={s.layout}>
         <div style={s.panelLista}>
           <div style={s.filtrosWrap}>
             {[
@@ -280,7 +289,7 @@ export default function Reclamos() {
               <div style={s.empty}>No hay reclamos {filtro !== 'todos' ? `con estado "${filtro}"` : ''}</div>
             ) : reclamosFiltrados.map(r => (
               <div key={r.id_reclamo}
-                onClick={() => { setSeleccionado(r.id_reclamo); setMsgExito(''); setMsgError(''); }}
+                onClick={() => { setSeleccionado(r.id_reclamo); setMsgExito(''); setMsgError(''); mostrarDetalleEnMovil(); }}
                 style={{ ...s.reclamoItem, ...(seleccionado === r.id_reclamo ? s.reclamoItemActivo : {}) }}>
                 <div style={s.reclamoTop}>
                   <span style={s.reclamoCliente}>{r.nombre_cliente}</span>
@@ -293,7 +302,7 @@ export default function Reclamos() {
           </div>
         </div>
 
-        <div style={s.panelDetalle}>
+        <div ref={detalleRef} className="tr-reclamo-detalle" style={s.panelDetalle}>
           {!seleccionado ? (
             <div style={s.detalleVacio}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ddd" strokeWidth="1.3">

@@ -406,7 +406,7 @@ export default function MisCompras() {
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
       {toastMsg && (
-        <div style={{ ...s.toast, background: toastOk ? '#111' : '#DC2626' }}>
+        <div className="tr-toast" style={{ ...s.toast, background: toastOk ? '#111' : '#DC2626' }}>
           {toastOk ? '✓' : '✕'} {toastMsg}
         </div>
       )}

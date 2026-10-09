@@ -99,7 +99,7 @@ export default function DashboardHome() {
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
       {/* Topbar */}
-      <div style={s.topbar}>
+      <div className="tr-topbar" style={s.topbar}>
         <div>
           <h1 style={s.titulo}>Panel de control</h1>
           <p style={s.subtitulo}>Resumen general de tu catálogo</p>
@@ -113,7 +113,7 @@ export default function DashboardHome() {
       </div>
 
       {/* Métricas */}
-      <div style={s.metricas}>
+      <div className="tr-metricas" style={s.metricas}>
         <div style={{ ...s.card, ...s.cardHero }}>
           <div style={s.cardHeader}>
             <div style={{ ...s.cardIcon, background: 'rgba(255,255,255,0.12)' }}>
@@ -154,6 +154,7 @@ export default function DashboardHome() {
           </div>
           <button onClick={() => navigate('/dashboard/productos')} style={s.btnVerTodos}>Ver todos →</button>
         </div>
+        <div className="tr-tabla-wrap">
         <table style={s.table}>
           <thead>
             <tr>{['Imagen', 'Producto', 'Precio', 'Stock', 'Estado'].map(h => <th key={h} style={s.th}>{h}</th>)}</tr>
@@ -196,6 +197,7 @@ export default function DashboardHome() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Sección productos eliminados */}
@@ -207,6 +209,7 @@ export default function DashboardHome() {
               <div style={s.tablaSubtitulo}>Podés reactivarlos cuando quieras</div>
             </div>
           </div>
+          <div className="tr-tabla-wrap">
           <table style={s.table}>
             <thead>
               <tr>{['Producto', 'Precio', 'Acción'].map(h => <th key={h} style={s.th}>{h}</th>)}</tr>
@@ -228,6 +231,7 @@ export default function DashboardHome() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
