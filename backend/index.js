@@ -7,6 +7,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { getConnection } = require('./src/config/db');
 const errorHandler = require('./src/middlewares/errorHandler');
+const { usaCloudinary } = require('./src/config/upload');
 
 /**
  * @fileoverview Punto de entrada principal del servidor.
@@ -118,6 +119,10 @@ app.listen(PORT, async () => {
     console.log('==============================================');
     console.log(`Servidor iniciado en el puerto ${PORT}`);
     console.log(`Orígenes permitidos (CORS): ${origenesPermitidos.join(', ')}`);
+    console.log(`Imágenes: ${usaCloudinary ? 'Cloudinary' : 'disco local (public/uploads)'}`);
+    if (esProduccion && !usaCloudinary) {
+        console.warn('ATENCIÓN: faltan las variables CLOUDINARY_*. En producción las imágenes en disco se pierden en cada reinicio.');
+    }
 
     try {
         await getConnection();

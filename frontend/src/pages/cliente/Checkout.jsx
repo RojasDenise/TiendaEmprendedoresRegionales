@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { obtenerCarrito, confirmarCompra } from '../../services/carritoService';
-import { UPLOADS_URL } from '../../config';
+import { urlImagen } from '../../config';
 
 /**
  * @fileoverview Página de checkout.
@@ -44,7 +44,6 @@ const FORMAS_PAGO = [
   },
 ];
 
-const IMG_URL = UPLOADS_URL;
 
 export default function Checkout() {
   const navigate   = useNavigate();
@@ -255,7 +254,7 @@ export default function Checkout() {
                   <div style={s.resumenImg}>
                     {item.imagen ? (
                       <img
-                        src={`${IMG_URL}${item.imagen}`}
+                        src={urlImagen(item.imagen)}
                         alt={item.nombre}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={e => { e.target.style.display = 'none'; }}

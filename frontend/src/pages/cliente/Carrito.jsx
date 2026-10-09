@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { quitarDelCarrito } from '../../services/carritoService';
-import { UPLOADS_URL } from '../../config';
+import { urlImagen } from '../../config';
 
-const IMG_URL = UPLOADS_URL;
 
 /**
  * @fileoverview Sidebar deslizable del carrito de compras.
@@ -103,7 +102,7 @@ export default function Carrito({ abierto, onCerrar, items = [], onActualizar })
                   <div style={s.itemImg}>
                     {item.imagen ? (
                       <img
-                        src={`${IMG_URL}${item.imagen}`}
+                        src={urlImagen(item.imagen)}
                         alt={item.nombre}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={e => { e.target.style.display = 'none'; }}

@@ -1,4 +1,5 @@
 const productoService = require('../services/productoService');
+const { guardarImagen } = require('../config/upload');
 
 /**
  * @fileoverview Controlador de productos.
@@ -90,7 +91,7 @@ const obtenerProductoPorId = async (req, res) => {
  *
  * Valida que todos los campos obligatorios estén presentes y que
  * precio y stock sean valores válidos. Si se adjunta una imagen
- * (via multipart/form-data), se guarda el nombre del archivo.
+ * (via multipart/form-data), se guarda con guardarImagen() (Cloudinary o disco).
  *
  * @async
  * @function crearProducto
@@ -114,10 +115,6 @@ const obtenerProductoPorId = async (req, res) => {
 const crearProducto = async (req, res) => {
   try {
     const { nombre, descripcion, precio, stock, id_categoria, id_usuario } = req.body;
-    const imagen = req.file ? req.file.filename : null;
-
-    console.log('Body recibido:', req.body);
-    console.log('Imagen recibida:', req.file);
 
     if (!nombre || !descripcion || !precio || !stock || !id_categoria || !id_usuario) {
       return res.status(400).json({ message: 'Complete todos los campos' });
@@ -125,6 +122,9 @@ const crearProducto = async (req, res) => {
     if (precio <= 0 || stock < 0) {
       return res.status(400).json({ message: 'Precio y stock deben ser valores positivos' });
     }
+
+    // La imagen se guarda recién después de validar, para no subir archivos de requests inválidas.
+    const imagen = await guardarImagen(req.file, 'productos');
 
     const nuevo = await productoService.crearProducto({ nombre, descripcion, precio, stock, id_categoria, id_usuario, imagen });
     res.status(201).json({ message: 'Producto agregado con éxito', producto: nuevo });
@@ -165,7 +165,6 @@ const crearProducto = async (req, res) => {
 const actualizarProducto = async (req, res) => {
   try {
     const { nombre, descripcion, precio, stock, id_categoria } = req.body;
-    const imagen = req.file ? req.file.filename : undefined;
 
     if (!nombre || !descripcion || !precio || stock === undefined || !id_categoria) {
       return res.status(400).json({ message: 'Complete todos los campos' });
@@ -173,6 +172,9 @@ const actualizarProducto = async (req, res) => {
     if (precio <= 0 || stock < 0) {
       return res.status(400).json({ message: 'Precio y stock deben ser valores positivos' });
     }
+
+    // Sin archivo nuevo queda en null y el service conserva la imagen anterior.
+    const imagen = await guardarImagen(req.file, 'productos');
 
     const actualizado = await productoService.actualizarProducto(req.params.id, { nombre, descripcion, precio, stock, id_categoria, imagen });
     if (!actualizado) return res.status(404).json({ message: 'Producto no encontrado' });

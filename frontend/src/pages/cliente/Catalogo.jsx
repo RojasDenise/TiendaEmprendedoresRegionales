@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { obtenerProductos, obtenerCategorias } from '../../services/productoService';
 import { agregarAlCarrito } from '../../services/carritoService';
-import { UPLOADS_URL } from '../../config';
+import { urlImagen } from '../../config';
 
 /**
  * @fileoverview Catálogo de productos del cliente.
@@ -13,7 +13,6 @@ import { UPLOADS_URL } from '../../config';
  * @author Rojas Karen Denise; Sandoval María Victoria
  */
 
-const IMG_URL = UPLOADS_URL;
 
 const getInitials = (nombre = '') =>
   nombre.trim().slice(0, 2).toUpperCase() || '??';
@@ -132,7 +131,7 @@ export default function Catalogo() {
               <div style={s.imgWrap}>
                 {p.imagen ? (
                   <img
-                    src={`${IMG_URL}${p.imagen}`}
+                    src={urlImagen(p.imagen)}
                     alt={p.nombre}
                     style={s.img}
                     onError={e => { e.target.style.display = 'none'; }}

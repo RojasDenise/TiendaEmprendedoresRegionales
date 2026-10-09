@@ -3,9 +3,8 @@ import {
   obtenerFacturas, agregarValoracion,
   obtenerMensajesReclamo, agregarReclamo, responderReclamo
 } from '../../services/clienteService';
-import { API_URL, UPLOADS_URL } from '../../config';
+import { API_URL, urlImagen } from '../../config';
 
-const IMG_URL  = UPLOADS_URL;
 const BASE_URL = API_URL;
 
 const MOTIVOS = [
@@ -62,7 +61,7 @@ function ModalValoracion({ factura, item, onClose, id_cliente, onExito }) {
         <div style={m.itemPreview}>
           {item.producto_imagen && (
             <div style={m.itemThumb}>
-              <img src={`${IMG_URL}${item.producto_imagen}`} alt={item.producto_nombre}
+              <img src={urlImagen(item.producto_imagen)} alt={item.producto_nombre}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 onError={e => { e.target.style.display = 'none'; }} />
             </div>
@@ -283,7 +282,7 @@ function ModalChat({ factura, reclamo, onClose, id_cliente, onReclamoCreado }) {
                     }}>
                       {msg.contenido}
                       {msg.imagen && (
-                        <img src={`${IMG_URL}${msg.imagen}`} alt="adjunto"
+                        <img src={urlImagen(msg.imagen)} alt="adjunto"
                           style={{ display: 'block', marginTop: 8, maxWidth: '100%', borderRadius: 8, maxHeight: 180, objectFit: 'cover' }} />
                       )}
                     </div>
@@ -451,7 +450,7 @@ export default function MisCompras() {
                   <div key={item.id_detalleFactura} style={s.item}>
                     <div style={s.itemImg}>
                       {item.producto_imagen ? (
-                        <img src={`${IMG_URL}${item.producto_imagen}`} alt={item.producto_nombre}
+                        <img src={urlImagen(item.producto_imagen)} alt={item.producto_nombre}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           onError={e => { e.target.style.display = 'none'; }} />
                       ) : (

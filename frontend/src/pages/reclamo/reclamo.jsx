@@ -1,8 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
-import { API_URL, UPLOADS_URL } from '../../config';
+import { API_URL, urlImagen } from '../../config';
 
 const BASE_URL = API_URL;
-const IMG_URL  = UPLOADS_URL;
 
 // ─── ChatEmprendedor ──────────────────────────────────────────────────────────
 function ChatEmprendedor({ id_reclamo, estado, id_usuario, onMensajeEnviado, onResolver }) {
@@ -87,7 +86,7 @@ function ChatEmprendedor({ id_reclamo, estado, id_usuario, onMensajeEnviado, onR
               }}>
                 {msg.contenido}
                 {msg.imagen && (
-                  <img src={`${IMG_URL}${msg.imagen}`} alt="adjunto"
+                  <img src={urlImagen(msg.imagen)} alt="adjunto"
                     style={{ display: 'block', marginTop: 8, maxWidth: '100%', borderRadius: 8, maxHeight: 180, objectFit: 'cover' }} />
                 )}
               </div>

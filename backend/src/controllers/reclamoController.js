@@ -1,5 +1,5 @@
 const reclamoService = require('../services/reclamoService');
-const { upload } = require('../config/upload');
+const { upload, guardarImagen } = require('../config/upload');
 const { responderError, responderErrorInterno } = require('../utils/errores');
 
 // ─── Controllers ─────────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ const responderReclamo = async (req, res) => {
     if (!id_usuario || !contenido) {
       return res.status(400).json({ error: 'Complete todos los campos' });
     }
-    const imagen = req.file ? req.file.filename : null;
+    const imagen = await guardarImagen(req.file, 'reclamos');
     const result = await reclamoService.responderReclamo(
       parseInt(id_reclamo), parseInt(id_usuario), contenido, imagen
     );
@@ -61,7 +61,7 @@ const responderCliente = async (req, res) => {
     if (!id_cliente || !contenido) {
       return res.status(400).json({ error: 'Complete todos los campos' });
     }
-    const imagen = req.file ? req.file.filename : null;
+    const imagen = await guardarImagen(req.file, 'reclamos');
     const result = await reclamoService.responderCliente(
       parseInt(id_reclamo), parseInt(id_cliente), contenido, imagen
     );
@@ -84,7 +84,7 @@ const resolverReclamo = async (req, res) => {
 
 const crearReclamo = async (req, res) => {
   try {
-    const imagen = req.file ? req.file.filename : null;
+    const imagen = await guardarImagen(req.file, 'reclamos');
     const result = await reclamoService.crearReclamo({ ...req.body, imagen });
     res.status(201).json(result);
   } catch (error) {

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { obtenerProductoPorId } from '../../services/productoService';
 import { obtenerValoraciones, agregarValoracion, obtenerFacturas } from '../../services/clienteService';
 import { agregarAlCarrito } from '../../services/carritoService';
-import { UPLOADS_URL } from '../../config';
+import { urlImagen } from '../../config';
 
 /**
  * @fileoverview Detalle de un producto.
@@ -14,7 +14,6 @@ import { UPLOADS_URL } from '../../config';
  * @author Rojas Karen Denise; Sandoval María Victoria
  */
 
-const IMG_URL = UPLOADS_URL;
 
 const getInitials = (nombre = '') =>
   nombre.trim().slice(0, 2).toUpperCase() || '??';
@@ -156,7 +155,7 @@ export default function DetalleProducto() {
       <div style={s.cardPrincipal}>
         <div style={s.imgWrap}>
           {producto.imagen ? (
-            <img src={`${IMG_URL}${producto.imagen}`} alt={producto.nombre} style={s.img}
+            <img src={urlImagen(producto.imagen)} alt={producto.nombre} style={s.img}
               onError={e => { e.target.style.display = 'none'; }} />
           ) : (
             <div style={s.sinImagen}>
