@@ -54,6 +54,7 @@ export default function Checkout() {
   const [cargando,   setCargando]   = useState(true);
   const [enviando,   setEnviando]   = useState(false);
   const [error,      setError]      = useState('');
+  const [compraOk,   setCompraOk]   = useState(false); // muestra la pantalla de compra confirmada
 
   // Formulario
   const [direccion,   setDireccion]   = useState('');
@@ -111,7 +112,9 @@ export default function Checkout() {
     try {
       // formaPago es el id numérico: 1 = Tarjeta, 2 = Efectivo/Transferencia
       await confirmarCompra(id_cliente, formaPago);
-      navigate('/catalogo/mis-compras', { state: { compraExitosa: true } });
+      window.dispatchEvent(new Event('carrito:actualizar')); // el carrito quedó vacío
+      setCompraOk(true);
+      window.scrollTo({ top: 0 });
     } catch (e) {
       setError(e.message);
     } finally {
@@ -124,6 +127,32 @@ export default function Checkout() {
       <div style={s.loadingWrap}>
         <div style={s.spinner} />
         <p style={{ color: '#bbb', fontSize: 14, marginTop: 12 }}>Cargando...</p>
+      </div>
+    );
+  }
+
+  if (compraOk) {
+    return (
+      <div style={s.exitoWrap} role="status">
+        <svg className="tr-exito" width="84" height="84" viewBox="0 0 52 52" fill="none" aria-hidden="true">
+          <circle cx="26" cy="26" r="24" stroke="#166534" strokeWidth="2.5" />
+          <polyline points="15 27 23 35 38 18" stroke="#166534" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <h1 className="tr-exito-texto" style={{ ...s.exitoTitulo, '--i': 0 }}>¡Compra confirmada!</h1>
+        <p className="tr-exito-texto" style={{ ...s.exitoBajada, '--i': 1 }}>
+          {formaPago === 2
+            ? 'Registramos tu pedido. Se va a procesar cuando se acredite el pago.'
+            : 'Registramos tu pedido.'}
+          {' '}Podés seguir su estado desde Mis compras.
+        </p>
+        <div className="tr-exito-texto" style={{ ...s.exitoBotones, '--i': 2 }}>
+          <button className="tr-btn" onClick={() => navigate('/catalogo/mis-compras')} style={s.exitoBtnPrimario}>
+            Ver mis compras
+          </button>
+          <button className="tr-btn" onClick={() => navigate('/catalogo')} style={s.exitoBtnSecundario}>
+            Seguir comprando
+          </button>
+        </div>
       </div>
     );
   }
@@ -309,6 +338,12 @@ export default function Checkout() {
 }
 
 const s = {
+  exitoWrap:          { fontFamily: "'DM Sans', sans-serif", maxWidth: 480, margin: '0 auto', padding: '4rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 14 },
+  exitoTitulo:        { fontFamily: "'DM Serif Display', serif", fontWeight: 400, fontSize: 30, color: '#111', margin: '8px 0 0' },
+  exitoBajada:        { fontSize: 14.5, lineHeight: 1.6, color: '#555', margin: 0 },
+  exitoBotones:       { display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 12 },
+  exitoBtnPrimario:   { padding: '0.8rem 1.4rem', background: '#111', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" },
+  exitoBtnSecundario: { padding: '0.8rem 1.4rem', background: '#fff', color: '#111', border: '0.5px solid #ddd', borderRadius: 10, fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" },
   loadingWrap:       { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem' },
   spinner:           { width: 28, height: 28, border: '2.5px solid #f0f0f0', borderTopColor: '#111', borderRadius: '50%', animation: 'spin 0.7s linear infinite' },
   topbar:            { display: 'flex', alignItems: 'center', gap: 14, marginBottom: '2rem' },

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { obtenerProductos, obtenerCategorias } from '../services/productoService';
 import { urlImagen } from '../config';
+import useAparecer from '../useAparecer';
 
 /**
  * @fileoverview Landing page pública de la tienda.
@@ -48,6 +49,24 @@ const PREGUNTAS = [
   { p: '¿Qué hago si algo llega mal?',        r: 'Desde Mis compras abrís un reclamo y chateás con el emprendedor hasta que quede resuelto.' },
   { p: '¿Cómo vendo mis productos?',          r: 'Creá una cuenta como emprendedor con el nombre de tu emprendimiento y una breve reseña. Desde tu panel cargás tus productos con fotos, precio y stock.' },
 ];
+
+/** Frases de la cinta que se desplaza debajo del inicio. */
+const CINTA = ['Hecho en la región', 'Comprá directo a quien lo hace', 'Emprendimientos locales', 'Productos con historia'];
+
+/** Título del inicio: se separa en palabras para que entren de a una. */
+const TITULO_INICIO = 'Lo que se hace en la región, en un solo lugar.';
+
+/**
+ * El telón de entrada se muestra una sola vez por visita:
+ * al volver al inicio desde el catálogo ya no aparece.
+ */
+function esPrimeraVisita() {
+  try {
+    return !sessionStorage.getItem('tr-telon');
+  } catch {
+    return false;
+  }
+}
 
 /** Iniciales para el avatar del emprendimiento. */
 const getInitials = (nombre = '') =>
@@ -118,6 +137,14 @@ export default function Landing() {
   const [productos,  setProductos]  = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [cargando,   setCargando]   = useState(true);
+  const [conTelon] = useState(esPrimeraVisita);
+
+  // Las secciones aparecen al scrollear; se vuelve a mirar cuando llegan los productos.
+  useAparecer([cargando]);
+
+  useEffect(() => {
+    try { sessionStorage.setItem('tr-telon', '1'); } catch { /* sin almacenamiento: no pasa nada */ }
+  }, []);
 
   useEffect(() => {
     Promise.all([obtenerProductos(), obtenerCategorias()])
@@ -130,7 +157,17 @@ export default function Landing() {
   }, []);
 
   return (
-    <div style={s.page}>
+    <div className={conTelon ? 'tr-con-telon' : undefined} style={s.page}>
+
+      {/* Telón de entrada */}
+      {conTelon && (
+        <div className="tr-telon" aria-hidden="true">
+          <div className="tr-telon-marca">
+            <Marca size={44} radius={12} />
+            <span>Tienda de Emprendedores Regionales</span>
+          </div>
+        </div>
+      )}
 
       {/* Barra superior */}
       <header style={s.header}>
@@ -140,13 +177,13 @@ export default function Landing() {
             <span style={s.brandName}>Tienda de Emprendedores Regionales</span>
           </Link>
           <nav aria-label="Principal" style={s.nav}>
-            <a href="#categorias" style={s.navLink}>Categorías</a>
-            <a href="#como-funciona" style={s.navLink}>Cómo funciona</a>
-            <a href="#emprendedores" style={s.navLink}>Para emprendedores</a>
-            <a href="#quienes-somos" style={s.navLink}>Quiénes somos</a>
+            <a href="#categorias" className="tr-link" style={s.navLink}>Categorías</a>
+            <a href="#como-funciona" className="tr-link" style={s.navLink}>Cómo funciona</a>
+            <a href="#emprendedores" className="tr-link" style={s.navLink}>Para emprendedores</a>
+            <a href="#quienes-somos" className="tr-link" style={s.navLink}>Quiénes somos</a>
             <span style={s.navBotones}>
-              <Link to="/login" style={s.btnSecundario}>Ingresar</Link>
-              <Link to="/register" style={s.btnPrimario}>Crear cuenta</Link>
+              <Link to="/login" className="tr-btn" style={s.btnSecundario}>Ingresar</Link>
+              <Link to="/register" className="tr-btn" style={s.btnPrimario}>Crear cuenta</Link>
             </span>
           </nav>
         </div>
@@ -156,23 +193,29 @@ export default function Landing() {
       <section style={{ background: '#F7F6F3' }}>
         <div style={{ ...s.contenedor, ...s.hero }}>
           <div style={s.heroTexto}>
-            <span style={s.eyebrow}>Hecho por emprendedores de la región</span>
-            <h1 style={s.heroTitulo}>Lo que se hace en la región, en un solo lugar.</h1>
-            <p style={s.heroBajada}>
+            <span className="tr-hero-in" style={s.eyebrow}>Hecho por emprendedores de la región</span>
+            <h1 style={s.heroTitulo} aria-label={TITULO_INICIO}>
+              {TITULO_INICIO.split(' ').map((palabra, i) => (
+                <span key={i} aria-hidden="true">
+                  <span className="tr-palabra"><span style={{ '--i': i }}>{palabra}</span></span>{' '}
+                </span>
+              ))}
+            </h1>
+            <p className="tr-hero-in" style={{ ...s.heroBajada, '--i': 5 }}>
               Una tienda online para que los emprendimientos locales vendan sus productos
               y se hagan conocer. Comprá directo a quien lo hace.
             </p>
-            <div style={s.heroBotones}>
-              <Link to="/catalogo" style={s.btnPrimarioGrande}>
+            <div className="tr-hero-in" style={{ ...s.heroBotones, '--i': 7 }}>
+              <Link to="/catalogo" className="tr-btn" style={s.btnPrimarioGrande}>
                 Ver el catálogo
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
                   <line x1="5" y1="12" x2="19" y2="12" />
                   <polyline points="12 5 19 12 12 19" />
                 </svg>
               </Link>
-              <a href="#emprendedores" style={s.btnSecundarioGrande}>Quiero vender</a>
+              <a href="#emprendedores" className="tr-btn" style={s.btnSecundarioGrande}>Quiero vender</a>
             </div>
-            <ul style={s.confianza}>
+            <ul className="tr-hero-in" style={{ ...s.confianza, '--i': 9 }}>
               <li style={s.confianzaItem}><Check />Tarjeta, efectivo o transferencia</li>
               <li style={s.confianzaItem}><Check />Seguimiento de cada pedido</li>
               <li style={s.confianzaItem}><Check />Reclamos con respuesta</li>
@@ -191,10 +234,10 @@ export default function Landing() {
               </div>
             )}
 
-            {!cargando && productos.map(p => {
+            {!cargando && productos.map((p, i) => {
               const emprendimiento = p.nombreEmprendimiento || p.nombre_usuario || '—';
               return (
-                <Link key={p.id_producto} to={`/catalogo/producto/${p.id_producto}`} style={s.card}>
+                <Link key={p.id_producto} to={`/catalogo/producto/${p.id_producto}`} className="tr-card tr-hero-in" style={{ ...s.card, '--i': 4 + i * 1.5 }}>
                   <div style={s.imgWrap}>
                     {p.imagen ? (
                       <img
@@ -230,18 +273,31 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Cinta que se desplaza (decorativa: repite ideas que ya están en el texto) */}
+      <div className="tr-cinta" aria-hidden="true">
+        <div className="tr-cinta-pista">
+          {[0, 1].map(grupo => (
+            <div key={grupo} className="tr-cinta-grupo">
+              {[...CINTA, ...CINTA].map((frase, i) => (
+                <Fragment key={i}><span>{frase}</span><i /></Fragment>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Categorías */}
       <section id="categorias" style={s.seccionCategorias}>
         <div style={{ ...s.contenedor, ...s.categoriasInner }}>
-          <h2 style={s.tituloSeccionChico}>Explorá por categoría</h2>
-          <div style={s.chips}>
-            <Link to="/catalogo" style={{ ...s.chip, ...s.chipActivo }}>Todas</Link>
+          <h2 className="tr-aparece" style={s.tituloSeccionChico}>Explorá por categoría</h2>
+          <div className="tr-aparece" style={{ ...s.chips, '--i': 1 }}>
+            <Link to="/catalogo" className="tr-btn" style={{ ...s.chip, ...s.chipActivo }}>Todas</Link>
             {categorias.map(c => (
               <Link
                 key={c.id_categoria}
                 to="/catalogo"
                 state={{ categoria: c.id_categoria }}
-                style={s.chip}
+                className="tr-btn" style={s.chip}
               >
                 {c.descripcion}
               </Link>
@@ -253,12 +309,12 @@ export default function Landing() {
       {/* Cómo funciona */}
       <section id="como-funciona" style={{ background: '#fff' }}>
         <div style={{ ...s.contenedor, ...s.seccion }}>
-          <div style={s.encabezado}>
+          <div className="tr-aparece" style={s.encabezado}>
             <span style={s.eyebrow}>Cómo funciona</span>
             <h2 style={s.tituloSeccion}>Comprar es simple, y siempre sabés en qué está tu pedido.</h2>
           </div>
           <div style={s.pasos}>
-            <div style={s.paso}>
+            <div className="tr-aparece tr-caja" style={{ ...s.paso, '--i': 0 }}>
               <span style={s.pasoNumero}>01</span>
               <h3 style={s.pasoTitulo}>Explorá el catálogo</h3>
               <p style={s.texto}>
@@ -266,7 +322,7 @@ export default function Landing() {
                 y las valoraciones de otros compradores.
               </p>
             </div>
-            <div style={s.paso}>
+            <div className="tr-aparece tr-caja" style={{ ...s.paso, '--i': 1 }}>
               <span style={s.pasoNumero}>02</span>
               <h3 style={s.pasoTitulo}>Armá tu carrito y pagá</h3>
               <p style={s.texto}>
@@ -274,7 +330,7 @@ export default function Landing() {
                 efectivo, transferencia o tarjeta.
               </p>
             </div>
-            <div style={s.paso}>
+            <div className="tr-aparece tr-caja" style={{ ...s.paso, '--i': 2 }}>
               <span style={s.pasoNumero}>03</span>
               <h3 style={s.pasoTitulo}>Seguí tu pedido</h3>
               <p style={s.texto}>
@@ -294,7 +350,7 @@ export default function Landing() {
       {/* Valoraciones y reclamos */}
       <section style={{ background: '#F7F6F3' }}>
         <div style={{ ...s.contenedor, ...s.seccion, ...s.respaldo }}>
-          <div style={s.respaldoTexto}>
+          <div className="tr-aparece" style={s.respaldoTexto}>
             <span style={s.eyebrow}>Compra con respaldo</span>
             <h2 style={s.tituloSeccion}>Opiniones reales y una respuesta cuando la necesitás.</h2>
             <p style={{ ...s.texto, fontSize: 15 }}>
@@ -303,16 +359,16 @@ export default function Landing() {
             </p>
           </div>
           <div style={s.respaldoCards}>
-            <div style={s.filaCard}>
+            <div className="tr-aparece tr-caja" style={{ ...s.filaCard, '--i': 1 }}>
               <div style={s.filaCardTexto}>
                 <span style={s.eyebrow}>Valoraciones</span>
                 <span style={{ display: 'flex', gap: 3 }} role="img" aria-label="5 estrellas">
                   <Estrella /><Estrella /><Estrella /><Estrella /><Estrella />
                 </span>
               </div>
-              <Link to="/catalogo/mis-compras" style={s.btnValorar}>Valorar compra</Link>
+              <Link to="/catalogo/mis-compras" className="tr-btn" style={s.btnValorar}>Valorar compra</Link>
             </div>
-            <div style={s.filaCard}>
+            <div className="tr-aparece tr-caja" style={{ ...s.filaCard, '--i': 2 }}>
               <div style={s.filaCardTexto}>
                 <span style={s.eyebrow}>Reclamos</span>
                 <span style={{ fontSize: 13.5, color: '#111' }}>Chateá con el emprendedor hasta resolverlo.</span>
@@ -330,7 +386,7 @@ export default function Landing() {
       {/* Quiénes somos */}
       <section id="quienes-somos" style={{ background: '#fff' }}>
         <div style={{ ...s.contenedor, ...s.seccion, ...s.nosotros }}>
-          <div style={s.nosotrosTexto}>
+          <div className="tr-aparece" style={s.nosotrosTexto}>
             <span style={s.eyebrow}>Quiénes somos</span>
             <h2 style={s.tituloSeccion}>Una tienda pensada para los emprendimientos de la región.</h2>
             <p style={{ ...s.texto, fontSize: 15 }}>
@@ -352,7 +408,7 @@ export default function Landing() {
           </div>
           <div style={s.objetivos}>
             {OBJETIVOS.map((o, i) => (
-              <div key={o.titulo} style={s.objetivo}>
+              <div key={o.titulo} className="tr-aparece tr-caja" style={{ ...s.objetivo, '--i': i + 1 }}>
                 <span style={s.objetivoNumero}>{String(i + 1).padStart(2, '0')}</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <h3 style={s.pasoTitulo}>{o.titulo}</h3>
@@ -367,7 +423,7 @@ export default function Landing() {
       {/* Para emprendedores */}
       <section id="emprendedores" style={{ background: '#fff' }}>
         <div style={{ ...s.contenedor, ...s.seccion }}>
-          <div style={s.bloqueOscuro}>
+          <div className="tr-aparece" style={s.bloqueOscuro}>
             <div style={s.bloqueOscuroTexto}>
               <span style={{ ...s.eyebrow, color: 'rgba(255,255,255,0.7)' }}>Para emprendedores</span>
               <h2 style={s.bloqueOscuroTitulo}>¿Tenés un emprendimiento? Sumalo a la tienda.</h2>
@@ -377,8 +433,8 @@ export default function Landing() {
               </p>
             </div>
             <div style={s.bloqueOscuroBotones}>
-              <Link to="/register" style={s.btnBlanco}>Crear cuenta de emprendedor</Link>
-              <Link to="/login" style={s.btnContorno}>Ya tengo cuenta</Link>
+              <Link to="/register" className="tr-btn" style={s.btnBlanco}>Crear cuenta de emprendedor</Link>
+              <Link to="/login" className="tr-btn" style={s.btnContorno}>Ya tengo cuenta</Link>
             </div>
           </div>
         </div>
@@ -387,7 +443,7 @@ export default function Landing() {
       {/* Preguntas frecuentes */}
       <section id="preguntas" style={{ background: '#F7F6F3' }}>
         <div style={{ ...s.contenedor, ...s.seccion, ...s.faq }}>
-          <div style={s.faqEncabezado}>
+          <div className="tr-aparece" style={s.faqEncabezado}>
             <span style={s.eyebrow}>Preguntas frecuentes</span>
             <h2 style={s.tituloSeccion}>Lo que más nos preguntan.</h2>
             <p style={{ ...s.texto, fontSize: 15 }}>
@@ -396,8 +452,8 @@ export default function Landing() {
             </p>
           </div>
           <div style={s.faqLista}>
-            {PREGUNTAS.map(q => (
-              <details key={q.p} style={s.faqItem}>
+            {PREGUNTAS.map((q, i) => (
+              <details key={q.p} className="tr-aparece" style={{ ...s.faqItem, '--i': i }}>
                 <summary style={s.faqPregunta}>{q.p}</summary>
                 <p style={{ ...s.texto, marginTop: 10 }}>{q.r}</p>
               </details>
@@ -408,11 +464,11 @@ export default function Landing() {
 
       {/* Cierre */}
       <section style={{ background: '#fff' }}>
-        <div style={{ ...s.contenedor, ...s.cierre }}>
+        <div className="tr-aparece" style={{ ...s.contenedor, ...s.cierre }}>
           <h2 style={{ ...s.tituloSeccion, textAlign: 'center' }}>Descubrí lo que se hace cerca tuyo.</h2>
           <div style={{ ...s.heroBotones, justifyContent: 'center', marginTop: 0 }}>
-            <Link to="/catalogo" style={s.btnPrimarioGrande}>Ver el catálogo</Link>
-            <Link to="/register" style={s.btnSecundarioGrande}>Sumar mi emprendimiento</Link>
+            <Link to="/catalogo" className="tr-btn" style={s.btnPrimarioGrande}>Ver el catálogo</Link>
+            <Link to="/register" className="tr-btn" style={s.btnSecundarioGrande}>Sumar mi emprendimiento</Link>
           </div>
         </div>
       </section>
@@ -431,10 +487,10 @@ export default function Landing() {
           </div>
           <nav aria-label="Tienda" style={s.footerColumna}>
             <span style={s.eyebrow}>Tienda</span>
-            <Link to="/catalogo" style={s.footerLink}>Catálogo</Link>
-            <Link to="/login" style={s.footerLink}>Ingresar</Link>
-            <Link to="/register" style={s.footerLink}>Crear cuenta</Link>
-            <a href="#preguntas" style={s.footerLink}>Preguntas frecuentes</a>
+            <Link to="/catalogo" className="tr-link" style={s.footerLink}>Catálogo</Link>
+            <Link to="/login" className="tr-link" style={s.footerLink}>Ingresar</Link>
+            <Link to="/register" className="tr-link" style={s.footerLink}>Crear cuenta</Link>
+            <a href="#preguntas" className="tr-link" style={s.footerLink}>Preguntas frecuentes</a>
           </nav>
           <div style={s.footerColumna}>
             <span style={s.eyebrow}>Contacto</span>
@@ -449,9 +505,9 @@ export default function Landing() {
           {/* Enlaces legales. El botón de arrepentimiento tiene que estar accesible desde la página de inicio. */}
           <nav aria-label="Legal" style={s.footerColumna}>
             <span style={s.eyebrow}>Legal</span>
-            <Link to="/privacidad" style={s.footerLink}>Política de privacidad</Link>
-            <Link to="/terminos" style={s.footerLink}>Términos y condiciones</Link>
-            <Link to="/arrepentimiento" style={s.footerLink}>Botón de arrepentimiento</Link>
+            <Link to="/privacidad" className="tr-link" style={s.footerLink}>Política de privacidad</Link>
+            <Link to="/terminos" className="tr-link" style={s.footerLink}>Términos y condiciones</Link>
+            <Link to="/arrepentimiento" className="tr-link" style={s.footerLink}>Botón de arrepentimiento</Link>
           </nav>
         </div>
         <div style={{ ...s.contenedor, ...s.footerLegal }}>

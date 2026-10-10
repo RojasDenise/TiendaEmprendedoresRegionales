@@ -158,7 +158,7 @@ export default function ClienteLayout() {
           </span>
           Carrito
           {totalItems > 0 && (
-            <span style={s.badge}>{totalItems > 99 ? '99+' : totalItems}</span>
+            <span key={totalItems} className="tr-pop" style={s.badge}>{totalItems > 99 ? '99+' : totalItems}</span>
           )}
         </button>
         )}
@@ -184,14 +184,17 @@ export default function ClienteLayout() {
         ) : (
         <div className="tr-footer" style={s.sidebarFooter}>
           <div className="tr-visit-text" style={s.visitanteTexto}>Ingresá para comprar y ver tus pedidos.</div>
-          <Link to="/login" state={{ volverA: location.pathname }} className="tr-visit-btn" style={s.btnIngresar}>Ingresar</Link>
-          <Link to="/register" state={{ volverA: location.pathname }} className="tr-visit-btn" style={s.btnCrearCuenta}>Crear cuenta</Link>
+          <Link to="/login" state={{ volverA: location.pathname }} className="tr-visit-btn tr-btn" style={s.btnIngresar}>Ingresar</Link>
+          <Link to="/register" state={{ volverA: location.pathname }} className="tr-visit-btn tr-btn" style={s.btnCrearCuenta}>Crear cuenta</Link>
         </div>
         )}
       </nav>
 
       <main className="tr-main" style={s.main}>
-        <Outlet />
+        {/* La `key` hace que cada pantalla entre con un fundido al navegar. */}
+        <div key={location.pathname} className="tr-pagina">
+          <Outlet />
+        </div>
         <PieLegal />
       </main>
 

@@ -26,6 +26,7 @@ export default function Catalogo() {
   const [busqueda,    setBusqueda]    = useState('');
   const [cargando,    setCargando]    = useState(true);
   const [agregando,   setAgregando]   = useState(null); // id_producto en proceso
+  const [agregado,    setAgregado]    = useState(null); // id_producto recién agregado (muestra el tilde)
   const [toastMsg,    setToastMsg]    = useState('');
   const [toastOk,     setToastOk]     = useState(true);
 
@@ -61,6 +62,9 @@ export default function Catalogo() {
       await agregarAlCarrito(id_cliente, id_producto, 1);
       window.dispatchEvent(new Event('carrito:actualizar'));
       mostrarToast('Producto agregado al carrito');
+      // El botón confirma ahí mismo con un tilde durante un momento.
+      setAgregado(id_producto);
+      setTimeout(() => setAgregado(actual => (actual === id_producto ? null : actual)), 1600);
     } catch (err) {
       mostrarToast(err.message || 'Error al agregar al carrito', false);
     } finally {
@@ -90,7 +94,7 @@ export default function Catalogo() {
       <div className="tr-topbar" style={s.topbar}>
         <div>
           <h1 style={s.titulo}>Catálogo</h1>
-          <p style={s.subtitulo}>{productos.length} productos disponibles</p>
+          <p style={s.subtitulo}>{cargando ? 'Cargando productos…' : `${productos.length} productos disponibles`}</p>
         </div>
         <div style={s.buscadorWrap}>
           <svg style={s.buscadorIcon} width="14" height="14" viewBox="0 0 24 24"
@@ -125,13 +129,29 @@ export default function Catalogo() {
 
       {/* Grid de productos */}
       {cargando ? (
-        <div style={s.empty}>Cargando productos...</div>
+        // Mientras carga se dibuja la silueta de las cards, así la pantalla no "salta" cuando llegan.
+        <div className="tr-grid-productos" style={s.grid} role="status" aria-label="Cargando productos">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} style={s.card} aria-hidden="true">
+              <div className="tr-card-img tr-esqueleto" style={{ ...s.imgWrap, background: undefined }} />
+              <div className="tr-card-body" style={s.cardBody}>
+                <div className="tr-esqueleto" style={{ height: 9, width: '35%', borderRadius: 4, marginBottom: 8 }} />
+                <div className="tr-esqueleto" style={{ height: 14, width: '80%', borderRadius: 4, marginBottom: 12 }} />
+                <div className="tr-esqueleto" style={{ height: 12, width: '55%', borderRadius: 4, marginBottom: 14 }} />
+                <div style={s.footer}>
+                  <div className="tr-esqueleto" style={{ height: 16, width: 60, borderRadius: 4 }} />
+                  <div className="tr-esqueleto" style={{ height: 26, width: 68, borderRadius: 7 }} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : productosFiltrados.length === 0 ? (
         <div style={s.empty}>No se encontraron productos.</div>
       ) : (
         <div className="tr-grid-productos" style={s.grid}>
-          {productosFiltrados.map(p => (
-            <div key={p.id_producto} style={s.card}
+          {productosFiltrados.map((p, i) => (
+            <div key={p.id_producto} className="tr-card tr-entra" style={{ ...s.card, '--i': i }}
               onClick={() => navigate(`/catalogo/producto/${p.id_producto}`)}>
 
               {/* Imagen */}
@@ -174,6 +194,7 @@ export default function Catalogo() {
                     ${Number(p.precio).toLocaleString('es-AR')}
                   </span>
                   <button
+                    className={agregado === p.id_producto ? 'tr-agregado' : undefined}
                     style={{
                       ...s.btnAgregar,
                       opacity: agregando === p.id_producto ? 0.6 : 1,
@@ -181,7 +202,9 @@ export default function Catalogo() {
                     onClick={e => handleAgregar(e, p.id_producto)}
                     disabled={agregando === p.id_producto || p.stock === 0}
                   >
-                    {agregando === p.id_producto ? '...' : 'Agregar'}
+                    {agregado === p.id_producto
+                      ? <><svg className="tr-tilde" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg> Listo</>
+                      : agregando === p.id_producto ? '...' : 'Agregar'}
                   </button>
                 </div>
               </div>

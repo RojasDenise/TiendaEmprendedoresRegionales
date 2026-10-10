@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { quitarDelCarrito } from '../../services/carritoService';
 import { urlImagen } from '../../config';
@@ -24,12 +24,21 @@ export default function Carrito({ abierto, onCerrar, items = [], onActualizar })
 
   const total = items.reduce((acc, i) => acc + Number(i.subtotal), 0);
 
+  // Item que se está quitando: primero se desliza hacia afuera y después desaparece.
+  const [saliendo, setSaliendo] = useState(null);
+
   const handleQuitar = async (id_itemCarrito) => {
+    setSaliendo(id_itemCarrito);
     try {
-      await quitarDelCarrito(id_itemCarrito);
-      onActualizar();
+      await Promise.all([
+        quitarDelCarrito(id_itemCarrito),
+        new Promise(listo => setTimeout(listo, 260)), // lo que dura la animación
+      ]);
+      await onActualizar();
     } catch (e) {
       console.error(e.message);
+    } finally {
+      setSaliendo(null);
     }
   };
 
@@ -96,8 +105,12 @@ export default function Carrito({ abierto, onCerrar, items = [], onActualizar })
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {items.map(item => (
-                <div key={item.id_itemCarrito} style={s.item}>
+              {items.map((item, i) => (
+                <div
+                  key={item.id_itemCarrito}
+                  className={saliendo === item.id_itemCarrito ? 'tr-item tr-item-sale' : 'tr-item'}
+                  style={{ ...s.item, '--i': i }}
+                >
                   {/* Imagen */}
                   <div style={s.itemImg}>
                     {item.imagen ? (
@@ -130,6 +143,8 @@ export default function Carrito({ abierto, onCerrar, items = [], onActualizar })
                     </span>
                     <button
                       onClick={() => handleQuitar(item.id_itemCarrito)}
+                      disabled={saliendo === item.id_itemCarrito}
+                      aria-label={`Quitar ${item.nombre} del carrito`}
                       style={s.btnQuitar}
                       title="Quitar del carrito"
                     >
@@ -152,7 +167,8 @@ export default function Carrito({ abierto, onCerrar, items = [], onActualizar })
           <div style={s.footer}>
             <div style={s.totalRow}>
               <span style={s.totalLabel}>Total</span>
-              <span style={s.totalValor}>${total.toLocaleString('es-AR')}</span>
+              {/* La `key` hace que el total "salte" cada vez que cambia. */}
+              <span key={total} className="tr-total" style={s.totalValor}>${total.toLocaleString('es-AR')}</span>
             </div>
             <button onClick={handleCheckout} style={s.btnCheckout}>
               Ir al checkout

@@ -1,0 +1,315 @@
+/*
+ * Animaciones y microinteracciones de toda la tienda.
+ *
+ * Igual que responsive.css, se enganchan con clases `tr-...` puestas en los
+ * elementos. Acá no hace falta `!important` porque los estilos en línea de los
+ * componentes no definen `transform`, `animation` ni `box-shadow` en las cards.
+ *
+ * Solo se animan `transform` y `opacity`, que el navegador resuelve sin
+ * recalcular el diseño: así no se traba en celulares.
+ *
+ * Quien tiene activado "reducir movimiento" en su dispositivo no ve ninguna
+ * animación (ver el último bloque).
+ */
+
+:root {
+  --tr-suave: cubic-bezier(0.22, 1, 0.36, 1);   /* frena suave al llegar */
+  --tr-rebote: cubic-bezier(0.34, 1.56, 0.64, 1); /* se pasa un poquito y vuelve */
+}
+
+html { scroll-behavior: smooth; }
+
+/* =========================================================================
+   Botones: responden al mouse y al toque
+   ========================================================================= */
+button,
+.tr-btn {
+  transition:
+    transform 0.2s var(--tr-suave),
+    box-shadow 0.2s var(--tr-suave),
+    opacity 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Al apretar se "hunden". Funciona también en celulares. */
+button:not(:disabled):active,
+.tr-btn:active {
+  transform: scale(0.96);
+  transition-duration: 0.06s;
+}
+
+/* El resto solo donde hay mouse, para que en el celular no quede "pegado". */
+@media (hover: hover) {
+  .tr-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  }
+  .tr-btn:hover:active { transform: translateY(0) scale(0.96); }
+
+  /* La flecha del botón se adelanta. */
+  .tr-btn svg { transition: transform 0.25s var(--tr-suave); }
+  .tr-btn:hover svg { transform: translateX(4px); }
+
+  /* Enlaces de texto: subrayado que crece desde la izquierda. */
+  .tr-link { position: relative; transition: color 0.2s ease; }
+  .tr-link::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -3px;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s var(--tr-suave);
+  }
+  .tr-link:hover { color: #111 !important; }
+  .tr-link:hover::after { transform: scaleX(1); }
+
+  /* Cards: se levantan y la foto se acerca. */
+  .tr-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.09);
+  }
+  .tr-card:hover img { transform: scale(1.06); }
+
+  /* Cajas de contenido (pasos, objetivos): un levante más sutil. */
+  .tr-caja:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+  }
+}
+
+.tr-card,
+.tr-caja {
+  transition: transform 0.35s var(--tr-suave), box-shadow 0.35s var(--tr-suave);
+}
+.tr-card img { transition: transform 0.6s var(--tr-suave); }
+.tr-card:active { transform: scale(0.985); }
+
+/* =========================================================================
+   Aparecer al scrollear (lo activa el hook useAparecer)
+   ========================================================================= */
+.tr-aparece { opacity: 0; }
+.tr-aparece.tr-visible {
+  opacity: 1;
+  animation: tr-sube 0.8s var(--tr-suave) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+@keyframes tr-sube {
+  from { opacity: 0; transform: translateY(28px); }
+}
+
+/* =========================================================================
+   Entradas al cargar una pantalla
+   ========================================================================= */
+
+/* Cambio de pantalla dentro de la tienda. */
+.tr-pagina { animation: tr-pagina 0.4s var(--tr-suave) backwards; }
+@keyframes tr-pagina {
+  from { opacity: 0; transform: translateY(10px); }
+}
+
+/* Cards del catálogo: entran una detrás de otra. */
+.tr-entra {
+  animation: tr-sube 0.55s var(--tr-suave) backwards;
+  animation-delay: calc(min(var(--i, 0), 12) * 45ms);
+}
+
+/* Inicio de la landing: cada elemento entra en orden. */
+.tr-hero-in {
+  animation: tr-sube 0.9s var(--tr-suave) backwards;
+  animation-delay: calc(var(--tr-espera, 0ms) + var(--i, 0) * 80ms);
+}
+
+/* Título del inicio: sube palabra por palabra desde atrás de una "máscara". */
+.tr-palabra {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+}
+.tr-palabra > span {
+  display: inline-block;
+  animation: tr-palabra 0.9s var(--tr-suave) backwards;
+  animation-delay: calc(var(--tr-espera, 0ms) + 120ms + var(--i, 0) * 55ms);
+}
+@keyframes tr-palabra {
+  from { transform: translateY(110%); }
+}
+
+/* =========================================================================
+   Telón de entrada de la landing (una vez por visita)
+   ========================================================================= */
+.tr-telon {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: tr-telon-sale 0.75s cubic-bezier(0.76, 0, 0.24, 1) 0.95s forwards;
+}
+.tr-telon-marca {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #fff;
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(20px, 4vw, 30px);
+  padding: 0 1.5rem;
+  text-align: center;
+  animation: tr-telon-marca 0.7s var(--tr-suave) backwards;
+}
+.tr-telon-marca svg path:nth-of-type(2) {
+  stroke-dasharray: 20;
+  animation: tr-dibuja 0.7s ease-out 0.15s backwards;
+}
+@keyframes tr-telon-sale  { to   { transform: translateY(-100%); } }
+@keyframes tr-telon-marca { from { opacity: 0; transform: translateY(16px) scale(0.96); } }
+@keyframes tr-dibuja      { from { stroke-dashoffset: 20; } }
+
+/* Con telón, el contenido del inicio espera a que se levante. */
+.tr-con-telon { --tr-espera: 1150ms; }
+
+/* =========================================================================
+   Cinta de texto que se desplaza
+   ========================================================================= */
+.tr-cinta {
+  overflow: hidden;
+  background: #111;
+  color: #fff;
+  padding: 0.9rem 0;
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(16px, 2.2vw, 22px);
+  white-space: nowrap;
+}
+.tr-cinta-pista {
+  display: inline-flex;
+  animation: tr-cinta 32s linear infinite;
+}
+.tr-cinta:hover .tr-cinta-pista { animation-play-state: paused; }
+.tr-cinta-grupo { display: inline-flex; align-items: center; }
+.tr-cinta-grupo > span { padding: 0 1.4rem; }
+.tr-cinta-grupo > i {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0.5;
+}
+@keyframes tr-cinta { to { transform: translateX(-50%); } }
+
+/* =========================================================================
+   Detalles
+   ========================================================================= */
+
+/* Contador del carrito: rebota cada vez que cambia. */
+.tr-pop { animation: tr-pop 0.45s var(--tr-rebote); }
+@keyframes tr-pop {
+  0%   { transform: scale(0.4); }
+  100% { transform: scale(1); }
+}
+
+/* Aviso flotante ("Producto agregado al carrito"). */
+.tr-toast { animation: tr-toast 0.4s var(--tr-rebote) backwards; }
+@keyframes tr-toast {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+}
+
+/* Preguntas frecuentes: la respuesta aparece al abrir. */
+details[open] > summary ~ * { animation: tr-pagina 0.35s var(--tr-suave) backwards; }
+
+/* Foto del detalle de producto. */
+.tr-detalle-img img { animation: tr-foto 0.7s var(--tr-suave) backwards; }
+@keyframes tr-foto {
+  from { opacity: 0; transform: scale(1.05); }
+}
+
+/* =========================================================================
+   Experiencia de compra
+   ========================================================================= */
+
+/* Siluetas de carga: un brillo que recorre la caja gris. */
+.tr-esqueleto {
+  background: linear-gradient(90deg, #efeeea 25%, #f8f7f4 50%, #efeeea 75%);
+  background-size: 200% 100%;
+  animation: tr-brillo 1.4s linear infinite;
+}
+@keyframes tr-brillo {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* Botón "Agregar" cuando confirma: se pone verde y el tilde se dibuja. */
+.tr-agregado {
+  background: #166534 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  animation: tr-pop 0.4s var(--tr-rebote);
+}
+.tr-tilde polyline {
+  stroke-dasharray: 24;
+  animation: tr-trazo 0.35s ease-out 0.1s backwards;
+}
+@keyframes tr-trazo { from { stroke-dashoffset: 24; } }
+
+/* Carrito: cada producto entra deslizándose y sale hacia el costado. */
+.tr-item {
+  animation: tr-item-entra 0.4s var(--tr-suave) backwards;
+  animation-delay: calc(min(var(--i, 0), 8) * 50ms);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.tr-item-sale { opacity: 0; transform: translateX(40px); }
+@keyframes tr-item-entra {
+  from { opacity: 0; transform: translateX(24px); }
+}
+
+/* El total del carrito "salta" cuando cambia. */
+.tr-total { display: inline-block; animation: tr-total 0.35s var(--tr-suave); }
+@keyframes tr-total {
+  from { opacity: 0.3; transform: translateY(-6px); }
+}
+
+/* Compra confirmada: se dibuja el círculo, después el tilde, y entra el texto. */
+.tr-exito circle {
+  stroke-dasharray: 151;
+  transform-origin: center;
+  transform: rotate(-90deg);
+  animation: tr-exito-circulo 0.6s ease-out backwards;
+}
+.tr-exito polyline {
+  stroke-dasharray: 36;
+  animation: tr-exito-tilde 0.35s ease-out 0.5s backwards;
+}
+.tr-exito { animation: tr-exito-latido 0.4s var(--tr-rebote) 0.8s; }
+.tr-exito-texto {
+  animation: tr-sube 0.6s var(--tr-suave) backwards;
+  animation-delay: calc(0.75s + var(--i, 0) * 0.1s);
+}
+@keyframes tr-exito-circulo { from { stroke-dashoffset: 151; } }
+@keyframes tr-exito-tilde   { from { stroke-dashoffset: 36; } }
+@keyframes tr-exito-latido  { 50% { transform: scale(1.1); } }
+
+/* Indicador de carga giratorio (lo usan Checkout y otras pantallas). */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* =========================================================================
+   Sin animaciones para quien pidió reducir el movimiento
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .tr-aparece { opacity: 1; }
+  .tr-telon { display: none; }
+  .tr-cinta-pista { transform: none; }
+}

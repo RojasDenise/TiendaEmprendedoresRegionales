@@ -59,6 +59,7 @@ export default function DetalleProducto() {
   // Carrito
   const [agregando,  setAgregando]  = useState(false);
   const [toastMsg,   setToastMsg]   = useState('');
+  const [agregado,   setAgregado]   = useState(false); // muestra el tilde en el botón
   const [toastOk,    setToastOk]    = useState(true);
 
   const mostrarToast = (msg, ok = true) => {
@@ -77,6 +78,8 @@ export default function DetalleProducto() {
       await agregarAlCarrito(id_cliente, parseInt(id), 1);
       window.dispatchEvent(new Event('carrito:actualizar'));
       mostrarToast('Producto agregado al carrito');
+      setAgregado(true);
+      setTimeout(() => setAgregado(false), 1600);
     } catch (err) {
       mostrarToast(err.message || 'Error al agregar al carrito', false);
     } finally {
@@ -207,13 +210,16 @@ export default function DetalleProducto() {
             <button
               onClick={handleAgregar}
               disabled={agregando || producto.stock === 0}
+              className={agregado ? 'tr-agregado' : undefined}
               style={{ ...s.btnAgregar, marginTop: 16, opacity: agregando ? 0.6 : 1 }}
             >
               {producto.stock === 0
                 ? 'Sin stock'
-                : agregando
-                  ? 'Agregando...'
-                  : '+ Agregar al carrito'}
+                : agregado
+                  ? <><svg className="tr-tilde" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg> Agregado</>
+                  : agregando
+                    ? 'Agregando...'
+                    : '+ Agregar al carrito'}
             </button>
           )}
         </div>
