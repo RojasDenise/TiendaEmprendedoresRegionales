@@ -201,6 +201,20 @@ const registrar = async (req, res) => {
             return res.status(409).json({ message: "El DNI ingresado ya pertenece a una cuenta activa." });
         }
 
+        // Correo ya registrado (en cualquiera de las dos tablas). Antes esto llegaba hasta el
+        // INSERT, chocaba con el índice único y la persona veía un error genérico.
+        const checkEmail = await pool.query(`
+            SELECT 1 FROM Usuario WHERE LOWER(email) = LOWER($1)
+            UNION ALL
+            SELECT 1 FROM Cliente WHERE LOWER(email) = LOWER($1)
+        `, [email]);
+        if (checkEmail.rows.length > 0) {
+            return res.status(409).json({
+                message: "Ya hay una cuenta con este correo. Ingresá con él; si no te llegó el mail de confirmación, desde ahí podés pedir que lo reenviemos.",
+                codigo: 'EMAIL_REGISTRADO',
+            });
+        }
+
         // Hash de la contraseña antes de almacenar
         const hash = await bcrypt.hash(contraseña, 10);
 

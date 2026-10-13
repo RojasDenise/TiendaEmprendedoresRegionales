@@ -135,11 +135,14 @@ export default function Register() {
     return (
       <div className="tr-auth-page" style={s.page}>
         <div className="tr-auth-card tr-pagina" style={s.card}>
+          {/* Tilde verde si el mail salió; signo de atención si no se pudo mandar. */}
           <svg className="tr-exito" width="64" height="64" viewBox="0 0 52 52" fill="none" aria-hidden="true" style={{ display: 'block', marginBottom: '1.25rem' }}>
-            <circle cx="26" cy="26" r="24" stroke="#166534" strokeWidth="2.5" />
-            <polyline points="15 27 23 35 38 18" stroke="#166534" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="26" cy="26" r="24" stroke={confirmarEn.enviado ? '#166534' : '#B45309'} strokeWidth="2.5" />
+            {confirmarEn.enviado
+              ? <polyline points="15 27 23 35 38 18" stroke="#166534" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              : <path d="M26 14v15M26 37v1" stroke="#B45309" strokeWidth="3.5" strokeLinecap="round" />}
           </svg>
-          <h1 style={s.titulo}>Revisá tu correo</h1>
+          <h1 style={s.titulo}>{confirmarEn.enviado ? 'Revisá tu correo' : 'Cuenta creada'}</h1>
           <p style={{ ...s.subtitulo, lineHeight: 1.55 }}>
             {confirmarEn.enviado
               ? <>Te mandamos un enlace a <strong style={{ color: '#111' }}>{confirmarEn.email}</strong> para confirmar tu cuenta. Puede tardar unos minutos y a veces cae en spam.</>
