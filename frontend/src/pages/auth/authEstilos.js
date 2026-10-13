@@ -18,3 +18,25 @@ export const estilos = {
   link:       { textAlign: 'center', marginTop: '1.25rem', fontSize: 13, color: '#888' },
   linkA:      { color: '#111', fontWeight: 500, textDecoration: 'none' },
 };
+
+/** Flecha del desplegable, dibujada para que se vea igual en todos los navegadores. */
+const FLECHA = `url("data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>')}")`;
+
+/** Estilo de desplegable de la tienda (también lo usa el tipo de cuenta del registro). */
+export const estiloSelect = {
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  MozAppearance: 'none',
+  width: '100%',
+  minWidth: 0,
+  padding: '0.6rem 2rem 0.6rem 0.8rem',
+  border: '0.5px solid #ddd',
+  borderRadius: 8,
+  fontSize: 14,
+  color: '#111',
+  background: `#fff ${FLECHA} no-repeat right 0.7rem center`,
+  cursor: 'pointer',
+  outline: 'none',
+  boxSizing: 'border-box',
+  fontFamily: "'DM Sans', sans-serif",
+};

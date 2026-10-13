@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { API_URL } from '../config';
+import SelectorFecha from './auth/SelectorFecha';
+import { estiloSelect } from './auth/authEstilos';
 
 /**
  * @fileoverview Componente de registro de nuevos usuarios en la plataforma.
@@ -78,6 +80,11 @@ export default function Register() {
     setCargando(true);
     setError('');
     setExito('');
+    if (!form.fecha_nacimiento) {
+      setError('Elegí tu fecha de nacimiento.');
+      setCargando(false);
+      return;
+    }
     const hoy = new Date();
     const cumple = new Date(form.fecha_nacimiento);
     let edad = hoy.getFullYear() - cumple.getFullYear();
@@ -123,17 +130,6 @@ export default function Register() {
       setCargando(false);
     }
   };
-
-  /**
-   * Fecha máxima permitida en el campo de nacimiento.
-   * Calculada dinámicamente restando 16 años a la fecha actual,
-   * para impedir que el usuario seleccione una edad menor a la requerida.
-   *
-   * @type {string} Fecha en formato ISO (YYYY-MM-DD).
-   */
-  const fechaMaxima = new Date();
-  fechaMaxima.setFullYear(fechaMaxima.getFullYear() - 16);
-  const maxDate = fechaMaxima.toISOString().split('T')[0];
 
   if (confirmarEn) {
     return (
@@ -200,17 +196,20 @@ export default function Register() {
             />
           </div>
 
-          <div style={s.grid2}>
-            <div style={s.campo}>
-              <label style={s.label}>DNI</label>
-              <input name="DNI" type="number" value={form.DNI} onChange={handleChange}
-                required style={s.input} placeholder="12345678" />
-            </div>
-            <div style={s.campo}>
-              <label style={s.label}>Fecha de nacimiento</label>
-              <input name="fecha_nacimiento" type="date" value={form.fecha_nacimiento}
-                onChange={handleChange} required style={s.input} max={maxDate} />
-            </div>
+          <div style={s.campo}>
+            <label style={s.label}>DNI</label>
+            <input name="DNI" type="number" value={form.DNI} onChange={handleChange}
+              required style={s.input} placeholder="12345678" />
+          </div>
+
+          {/* Fecha de nacimiento: tres desplegables; solo ofrece años de personas de 16 o más. */}
+          <div style={s.campo}>
+            <span id="nacimiento-etiqueta" style={s.label}>Fecha de nacimiento</span>
+            <SelectorFecha
+              id="nacimiento"
+              value={form.fecha_nacimiento}
+              onChange={fecha => setForm(f => ({ ...f, fecha_nacimiento: fecha }))}
+            />
           </div>
 
           <div style={s.campo}>
@@ -227,7 +226,7 @@ export default function Register() {
 
           <div style={s.campo}>
             <label style={s.label}>Tipo de cuenta</label>
-            <select name="id_rol" value={form.id_rol} onChange={handleChange} style={s.input}>
+            <select name="id_rol" value={form.id_rol} onChange={handleChange} style={estiloSelect}>
               <option value="2">Emprendedor</option>
               <option value="3">Cliente</option>
             </select>
