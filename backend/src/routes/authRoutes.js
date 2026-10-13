@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
 // Importamos ambas funciones desde el controlador
-const { iniciarSesion, registrar } = require('../controllers/authController');
+const {
+    iniciarSesion, registrar,
+    verificarCorreo, reenviarVerificacion, solicitarRecuperacion, restablecerContrasena,
+} = require('../controllers/authController');
 
 /**
  * @fileoverview Rutas de autenticación y acceso.
@@ -31,4 +34,16 @@ router.post('/login', iniciarSesion);
  */
 router.post('/register', registrar);
 
-module.exports = router;
+/**
+ * Verificación de correo y recuperación de contraseña.
+ * Los enlaces que llegan por mail abren una pantalla del frontend
+ * (/verificar o /restablecer) que llama a estos endpoints con el token.
+ * Las rutas comparten el límite de pedidos de /api/auth (ver index.js).
+ * @access Público
+ */
+router.post('/verificar', verificarCorreo);
+router.post('/reenviar-verificacion', reenviarVerificacion);
+router.post('/olvide', solicitarRecuperacion);
+router.post('/restablecer', restablecerContrasena);
+
+module.exports = router;

@@ -20,6 +20,9 @@ import Reclamos from './pages/reclamo/reclamo';
 import PoliticaPrivacidad from './pages/legal/PoliticaPrivacidad';
 import TerminosCondiciones from './pages/legal/TerminosCondiciones';
 import Arrepentimiento from './pages/legal/Arrepentimiento';
+import VerificarCorreo from './pages/auth/VerificarCorreo';
+import OlvideContrasena from './pages/auth/OlvideContrasena';
+import RestablecerContrasena from './pages/auth/RestablecerContrasena';
 import './index.css';
 
 /**
@@ -41,6 +44,7 @@ import './index.css';
  * - `/` → Landing page pública (presenta la tienda y lleva al catálogo, que se puede ver sin iniciar sesión).
  * - `/login` → Pantalla de inicio de sesión.
  * - `/register` → Pantalla de registro de nuevos usuarios.
+ * - `/verificar`, `/olvide`, `/restablecer` → Confirmación de correo y recuperación de contraseña.
  * - `/privacidad`, `/terminos`, `/arrepentimiento` → Páginas legales públicas.
  * - `/dashboard` → Layout del emprendedor con rutas anidadas:
  *   - index → Panel de control del emprendedor.
@@ -67,6 +71,11 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        {/* Pantallas que se abren desde los mails (confirmar cuenta, recuperar contraseña) */}
+        <Route path="/verificar" element={<VerificarCorreo />} />
+        <Route path="/olvide" element={<OlvideContrasena />} />
+        <Route path="/restablecer" element={<RestablecerContrasena />} />
 
         {/* Páginas legales: públicas, se leen sin iniciar sesión */}
         <Route path="/privacidad" element={<PoliticaPrivacidad />} />
@@ -97,4 +106,4 @@ export default function App() {
       </Routes>
     </BrowserRouter>
   );
-}
+}

@@ -19,9 +19,16 @@ export default function Login() {
   const [cargando, setCargando] = useState(false);
   const navigate = useNavigate();
 
+  // Cuenta sin confirmar: se ofrece reenviar el mail de confirmación.
+  const [sinVerificar, setSinVerificar] = useState(false);
+  const [reenvio, setReenvio] = useState(''); // mensaje después de reenviar
+  const [reenviando, setReenviando] = useState(false);
+
   // Si el visitante venía de una pantalla de la tienda (por ejemplo, un producto),
   // después de ingresar como cliente vuelve ahí. Solo se aceptan rutas del catálogo.
   const { state } = useLocation();
+  // Llega desde /verificar cuando el enlace venció: se muestra directo la opción de reenviar.
+  const [pedirReenvio] = useState(Boolean(state?.pedirReenvio));
   const volverA = typeof state?.volverA === 'string' && state.volverA.startsWith('/catalogo')
     ? state.volverA
     : '/catalogo';
@@ -34,6 +41,8 @@ export default function Login() {
     e.preventDefault();
     setCargando(true);
     setError('');
+    setSinVerificar(false);
+    setReenvio('');
 
     try {
       const res = await fetch(`${BASE_URL}/auth/login`, {
@@ -46,6 +55,7 @@ export default function Login() {
 
       if (!res.ok) {
         sessionStorage.clear();
+        if (data.codigo === 'EMAIL_NO_VERIFICADO') setSinVerificar(true);
         throw new Error(data.message || 'Credenciales incorrectas.');
       }
 
@@ -72,6 +82,30 @@ export default function Login() {
       setError(err.message || 'Error al iniciar sesión.');
     } finally {
       setCargando(false);
+    }
+  };
+
+  /** Pide otro mail de confirmación para el correo escrito en el formulario. */
+  const handleReenviar = async () => {
+    if (!form.email) {
+      setError('Escribí tu correo arriba y tocá de nuevo "Reenviar".');
+      return;
+    }
+    setReenviando(true);
+    try {
+      const res = await fetch(`${BASE_URL}/auth/reenviar-verificacion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'No pudimos reenviar el correo.');
+      setError('');
+      setReenvio(data.message);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setReenviando(false);
     }
   };
 
@@ -107,6 +141,16 @@ export default function Login() {
         <p style={s.subtitulo}>Ingresá con tu cuenta para continuar</p>
 
         {error && <div style={s.alerta}>{error}</div>}
+        {reenvio && <div style={s.alertaOk}>{reenvio}</div>}
+        {(sinVerificar || pedirReenvio) && !reenvio && (
+          <div style={s.alertaInfo}>
+            ¿No te llegó el mail de confirmación? Revisá la carpeta de spam o{' '}
+            <button type="button" onClick={handleReenviar} disabled={reenviando} style={s.btnTexto}>
+              {reenviando ? 'enviando…' : 'reenvialo'}
+            </button>
+            {pedirReenvio && !form.email && ' (escribí tu correo abajo primero)'}.
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div style={s.campo}>
@@ -123,7 +167,10 @@ export default function Login() {
           </div>
 
           <div style={s.campo}>
-            <label style={s.label}>Contraseña</label>
+            <span style={s.labelFila}>
+              <label style={s.label}>Contraseña</label>
+              <Link to="/olvide" style={s.olvide}>¿La olvidaste?</Link>
+            </span>
             <input
               name="contraseña"
               type="password"
@@ -218,6 +265,47 @@ const s = {
     fontSize: 13,
     marginBottom: '1rem',
   },
+  alertaOk: {
+    background: '#DCFCE7',
+    color: '#166534',
+    border: '0.5px solid #BBF7D0',
+    borderRadius: 8,
+    padding: '0.65rem 0.9rem',
+    fontSize: 13,
+    lineHeight: 1.45,
+    marginBottom: '1rem',
+  },
+  alertaInfo: {
+    background: '#F1F5F9',
+    border: '0.5px solid #CBD5E1',
+    color: '#334155',
+    borderRadius: 8,
+    padding: '0.65rem 0.9rem',
+    fontSize: 13,
+    lineHeight: 1.45,
+    marginBottom: '1rem',
+  },
+  btnTexto: {
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    font: 'inherit',
+    color: '#111',
+    fontWeight: 600,
+    textDecoration: 'underline',
+    cursor: 'pointer',
+  },
+  labelFila: {
+    display: 'flex',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  olvide: {
+    fontSize: 12.5,
+    color: '#666',
+    textDecoration: 'none',
+  },
   campo: {
     display: 'flex',
     flexDirection: 'column',
@@ -264,4 +352,4 @@ const s = {
     fontWeight: 500,
     textDecoration: 'none',
   },
-};
+};

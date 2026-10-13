@@ -43,6 +43,8 @@ export default function Register() {
   });
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
+  // Después de registrarse: a qué correo se mandó la confirmación (cambia la pantalla).
+  const [confirmarEn, setConfirmarEn] = useState(null);
   const [cargando, setCargando] = useState(false);
   // Aceptación de la política de privacidad y los términos: obligatoria para crear la cuenta.
   const [acepta, setAcepta] = useState(false);
@@ -88,6 +90,12 @@ export default function Register() {
       return;
     }
 
+    if (form.contraseña.length < 8) {
+      setError('La contraseña tiene que tener al menos 8 caracteres.');
+      setCargando(false);
+      return;
+    }
+
     if (!acepta) {
       setError('Para crear la cuenta tenés que aceptar la Política de privacidad y los Términos y condiciones.');
       setCargando(false);
@@ -102,8 +110,13 @@ export default function Register() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Error al registrarse.');
-      setExito(data.message);
-      setTimeout(() => navigate('/login', { state }), 2000);
+      if (data.verificacion) {
+        // La cuenta queda creada pero hay que confirmar el correo antes de ingresar.
+        setConfirmarEn({ email: form.email, mensaje: data.message, enviado: data.correoEnviado !== false });
+      } else {
+        setExito(data.message);
+        setTimeout(() => navigate('/login', { state }), 2000);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -121,6 +134,31 @@ export default function Register() {
   const fechaMaxima = new Date();
   fechaMaxima.setFullYear(fechaMaxima.getFullYear() - 16);
   const maxDate = fechaMaxima.toISOString().split('T')[0];
+
+  if (confirmarEn) {
+    return (
+      <div className="tr-auth-page" style={s.page}>
+        <div className="tr-auth-card tr-pagina" style={s.card}>
+          <svg className="tr-exito" width="64" height="64" viewBox="0 0 52 52" fill="none" aria-hidden="true" style={{ display: 'block', marginBottom: '1.25rem' }}>
+            <circle cx="26" cy="26" r="24" stroke="#166534" strokeWidth="2.5" />
+            <polyline points="15 27 23 35 38 18" stroke="#166534" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <h1 style={s.titulo}>Revisá tu correo</h1>
+          <p style={{ ...s.subtitulo, lineHeight: 1.55 }}>
+            {confirmarEn.enviado
+              ? <>Te mandamos un enlace a <strong style={{ color: '#111' }}>{confirmarEn.email}</strong> para confirmar tu cuenta. Puede tardar unos minutos y a veces cae en spam.</>
+              : <>Tu cuenta quedó creada, pero no pudimos mandar el mail de confirmación. Desde la pantalla de ingreso podés pedir que lo reenviemos.</>}
+          </p>
+          {confirmarEn.enviado && form.id_rol === '2' && (
+            <p style={{ fontSize: 13, lineHeight: 1.5, color: '#666', margin: '0 0 1.5rem' }}>{confirmarEn.mensaje}</p>
+          )}
+          <Link to="/login" state={state} className="tr-btn" style={{ ...s.btn, display: 'block', textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' }}>
+            Ir a ingresar
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="tr-auth-page" style={s.page}>
@@ -184,7 +222,7 @@ export default function Register() {
           <div style={s.campo}>
             <label style={s.label}>Contraseña</label>
             <input name="contraseña" type="password" value={form.contraseña} onChange={handleChange}
-              required style={s.input} placeholder="Mínimo 6 caracteres" />
+              required style={s.input} minLength={8} autoComplete="new-password" placeholder="Mínimo 8 caracteres" />
           </div>
 
           <div style={s.campo}>
@@ -304,4 +342,4 @@ const s = {
   alertaInfo: { background: '#F1F5F9', border: '0.5px solid #CBD5E1', color: '#334155', borderRadius: 8, padding: '0.75rem 1rem', fontSize: 13, lineHeight: 1.45, marginBottom: '1.25rem' },
   link: { textAlign: 'center', marginTop: '1.25rem', fontSize: 13, color: '#888' },
   linkA: { color: '#111', fontWeight: 500, textDecoration: 'none' },
-};
+};
